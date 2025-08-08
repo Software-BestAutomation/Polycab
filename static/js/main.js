@@ -137,14 +137,19 @@ function renderStreams() {
     header.appendChild(btn_container);
     cell.appendChild(header);
 
+    // Create a responsive container for the video feed
+    const videoContainer = document.createElement("div");
+    videoContainer.classList.add("video-container");
+    
     // The actual live MJPEG image
     const img = document.createElement("img");
     img.src = videoFeedUrl(id);
     img.alt = `Live ${id}`;
-    img.style.width = "100%";
-    img.style.display = "block";
+    img.classList.add("video-feed");
     img.draggable = false; // avoid nested drag issues
-    cell.appendChild(img);
+    
+    videoContainer.appendChild(img);
+    cell.appendChild(videoContainer);
 
     // Click to select this stream
     cell.addEventListener("click", () => {
