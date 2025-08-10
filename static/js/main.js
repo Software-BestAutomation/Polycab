@@ -99,9 +99,10 @@ async function postJSON(url, body) {
 function renderStreams() {
   dash.innerHTML = "";
   const count = streams.length;
-  const cols = Math.ceil(Math.sqrt(count)) || 1;
-  dash.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-
+  
+  // Clear any existing classes
+  dash.classList.remove("single-stream");
+  
   if (count === 0) {
     const hint = document.createElement("p");
     hint.style.gridColumn = "1/-1";
@@ -110,6 +111,15 @@ function renderStreams() {
     hint.textContent = "Drag camera icons here";
     dash.appendChild(hint);
     return;
+  }
+
+  // If only one stream, add special class
+  if (count === 1) {
+    dash.classList.add("single-stream");
+  } else {
+    // For multiple streams, use responsive grid
+    const cols = Math.ceil(Math.sqrt(count)) || 1;
+    dash.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
   }
 
   streams.forEach((id) => {
@@ -125,9 +135,11 @@ function renderStreams() {
     const title = document.createElement("span");
     title.textContent = `Camera ${id}`;
 
+
     const minimizeBtn = document.createElement("button");
-    minimizeBtn.textContent = "—";
+    minimizeBtn.textContent = "×";
     minimizeBtn.classList.add("minimize-btn");
+    minimizeBtn.title = "Remove stream";
 
     const btn_container = document.createElement("div");
     btn_container.classList.add("btn-container");
@@ -137,16 +149,15 @@ function renderStreams() {
     header.appendChild(btn_container);
     cell.appendChild(header);
 
-    // Create a responsive container for the video feed
+    // Video container
     const videoContainer = document.createElement("div");
     videoContainer.classList.add("video-container");
     
-    // The actual live MJPEG image
     const img = document.createElement("img");
     img.src = videoFeedUrl(id);
     img.alt = `Live ${id}`;
     img.classList.add("video-feed");
-    img.draggable = false; // avoid nested drag issues
+    img.draggable = false;
     
     videoContainer.appendChild(img);
     cell.appendChild(videoContainer);
@@ -154,7 +165,7 @@ function renderStreams() {
     // Click to select this stream
     cell.addEventListener("click", () => {
       activeStreamId = id;
-      renderStreams(); // re-render to update borders
+      renderStreams();
       updateCameraName();
     });
 
