@@ -95,6 +95,33 @@ async function postJSON(url, body) {
   return data;
 }
 
+// --- PTZ Speed control ---
+function getPTZSpeed() {
+  const el = document.getElementById("ptz-speed");
+  const v = parseInt(el?.value || "5", 10);
+  return Number.isFinite(v) ? v : 5; // API expects 1..8
+}
+
+// Initialize speed UI
+(function initSpeedUI() {
+  const input = document.getElementById("ptz-speed");
+  const badge = document.getElementById("ptz-speed-value");
+  if (!input || !badge) return;
+  
+  const sync = () => {
+    badge.textContent = input.value;
+    // Add visual feedback when changing speed
+    badge.style.transform = "scale(1.2)";
+    setTimeout(() => {
+      badge.style.transform = "scale(1)";
+    }, 200);
+  };
+  
+  input.addEventListener("input", sync);
+  input.addEventListener("change", sync);
+  sync();
+})();
+
 // ---------- Rendering ----------
 function renderStreams() {
   dash.innerHTML = "";
@@ -214,7 +241,7 @@ async function startPTZ(direction) {
       cam_id: activeStreamId,
       action: "start",
       direction,
-      speed: 5,
+      speed: getPTZSpeed(),
     });
   } catch (e) {
     console.error(e);
@@ -228,7 +255,7 @@ async function stopPTZ(direction) {
       cam_id: activeStreamId,
       action: "stop",
       direction,
-      speed: 5,
+      speed: getPTZSpeed(),
     });
   } catch (e) {
     console.error(e);
