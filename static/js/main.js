@@ -535,6 +535,9 @@ function showView(viewId) {
 
   // close any open submenus to keep things tidy
   closeAllSubMenus();
+  // lazy-load HTML partial & per-tab JS
+  ensurePartialLoaded(viewId);
+  ensureModuleLoaded(viewId);
 }
 
 // handle sidebar clicks
@@ -563,3 +566,77 @@ function routeFromHash() {
 // boot router
 window.addEventListener("hashchange", routeFromHash);
 window.addEventListener("load", routeFromHash);
+
+// ---------------- SPA Partial Loader (non-breaking) ----------------
+const _loadedPartials = new Set();
+const _loadedModules = new Set();
+
+async function ensurePartialLoaded(viewId) {
+  // Match your section ids: dashboard, labs, cameras, requests, sessions, settings
+  const section = document.getElementById(viewId);
+  if (!section) return;
+
+  // Only load once
+  if (_loadedPartials.has(viewId)) return;
+
+  // dashboard section already contains your grid; its partial is optional
+  const wantsPartial = [
+    "labs",
+    "cameras",
+    "requests",
+    "sessions",
+    "settings",
+    "dashboard",
+  ].includes(viewId);
+  if (!wantsPartial) return;
+
+  try {
+    const res = await fetch(`/partials/${encodeURIComponent(viewId)}.html`, {
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const html = await res.text();
+      // Inject into the inner content area of the section, but do not wipe your stream grid on dashboard
+      if (viewId === "dashboard") {
+        // Optionally append dashboard-only helpers below the existing content
+        const helper = document.createElement("div");
+        helper.innerHTML = html;
+        section.appendChild(helper);
+      } else {
+        section.innerHTML = html; // these tabs were placeholder-only; safe to replace
+      }
+      _loadedPartials.add(viewId);
+    }
+  } catch (e) {
+    console.warn("Partial load failed for", viewId, e);
+  }
+}
+
+async function ensureModuleLoaded(viewId) {
+  if (_loadedModules.has(viewId)) return;
+  const known = new Set([
+    "dashboard",
+    "labs",
+    "cameras",
+    "requests",
+    "sessions",
+    "settings",
+  ]);
+  if (!known.has(viewId)) return;
+
+  try {
+    // Use native ES module dynamic import; keep filenames equal to viewId
+    const mod = await import(`/static/js/views/${viewId}.js`);
+    if (mod && typeof mod.init === "function") {
+      // Delay until section exists & (if needed) after partial load
+      queueMicrotask(() => mod.init());
+    }
+    _loadedModules.add(viewId);
+  } catch (e) {
+    // It's fine if a module doesn't exist yet
+    console.debug(`No module for ${viewId} or failed to load.`, e);
+  }
+}
+
+// Patch your existing showView to call loaders without changing its external behavior.
+// Find your showView(viewId) function and add these two lines at the END of it:

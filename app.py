@@ -71,6 +71,18 @@ def mjpeg_generator(rtsp):
         )
     cap.release()
 
+from flask import send_from_directory
+
+# --- SPA partials loader ---
+@app.route("/partials/<name>.html")
+def send_partial(name):
+    # Only allow the known pages
+    allowed = {"dashboard", "labs", "cameras", "requests", "sessions", "settings"}
+    if name not in allowed:
+        return "Not found", 404
+    return send_from_directory(os.path.join(app.root_path, "templates", "partials"), f"{name}.html")
+
+
 
 @app.route("/")
 def index():
