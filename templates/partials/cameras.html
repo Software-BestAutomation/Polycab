@@ -1,4 +1,161 @@
-<div class="page-wrap">
-  <h2>Cameras Management</h2>
-  <div id="cameras-table-mount"></div>
+<section class="page-wrap">
+  <div class="page-header">
+    <h2>Camera Management</h2>
+    <button id="add-camera-btn" class="add-btn">
+      <span class="material-symbols-outlined">add</span>
+      Add Camera
+    </button>
+  </div>
+
+  <!-- Cameras Table -->
+  <div class="cameras-table-container">
+    <table class="cameras-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>IP Address</th>
+          <th>Lab</th>
+          <th>Status</th>
+          <th>PTZ</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="cameras-table-body">
+        <!-- Cameras will be added here dynamically -->
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Add Camera Modal -->
+<div id="add-camera-modal" class="modal">
+  <div class="modal-overlay"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Add New Camera</h3>
+      <button class="modal-close-btn" id="close-add-camera-modal">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="add-camera-form">
+        <div class="form-group">
+          <label for="camera-name">Camera Name</label>
+          <input
+            type="text"
+            id="camera-name"
+            name="camera-name"
+            required
+            placeholder="Enter camera name"
+          />
+        </div>
+        <div class="form-group">
+          <label for="ip-address">IP Address</label>
+          <input
+            type="text"
+            id="ip-address"
+            name="ip-address"
+            required
+            placeholder="Enter IP address"
+          />
+        </div>
+        <div class="form-group">
+          <label for="camera-lab">Lab</label>
+          <select id="camera-lab" name="camera-lab" required>
+            <option value="">Select Lab</option>
+            <option value="Electronics Lab">Electronics Lab</option>
+            <option value="Mechanical Lab">Mechanical Lab</option>
+            <option value="Physics Lab">Physics Lab</option>
+            <option value="Chemistry Lab">Chemistry Lab</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>PTZ Support</label>
+          <div class="radio-group">
+            <label>
+              <input type="radio" name="ptz-support" value="yes" checked />
+              <span>Yes</span>
+            </label>
+            <label>
+              <input type="radio" name="ptz-support" value="no" />
+              <span>No</span>
+            </label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" id="cancel-add-camera">
+            Cancel
+          </button>
+          <button type="submit" class="btn-primary">Add Camera</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Camera Modal -->
+<div id="edit-camera-modal" class="modal">
+  <div class="modal-overlay"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Edit Camera</h3>
+      <button class="modal-close-btn" id="close-edit-camera-modal">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form id="edit-camera-form">
+        <input type="hidden" id="edit-camera-id" />
+        <div class="form-group">
+          <label for="edit-camera-name">Camera Name</label>
+          <input
+            type="text"
+            id="edit-camera-name"
+            name="edit-camera-name"
+            required
+            placeholder="Enter camera name"
+          />
+        </div>
+        <div class="form-group">
+          <label for="edit-ip-address">IP Address</label>
+          <input
+            type="text"
+            id="edit-ip-address"
+            name="edit-ip-address"
+            required
+            placeholder="Enter IP address"
+          />
+        </div>
+        <div class="form-group">
+          <label for="edit-camera-lab">Lab</label>
+          <select id="edit-camera-lab" name="edit-camera-lab" required>
+            <option value="">Select Lab</option>
+            <option value="Electronics Lab">Electronics Lab</option>
+            <option value="Mechanical Lab">Mechanical Lab</option>
+            <option value="Physics Lab">Physics Lab</option>
+            <option value="Chemistry Lab">Chemistry Lab</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>PTZ Support</label>
+          <div class="radio-group">
+            <label>
+              <input type="radio" name="edit-ptz-support" value="yes" checked />
+              <span>Yes</span>
+            </label>
+            <label>
+              <input type="radio" name="edit-ptz-support" value="no" />
+              <span>No</span>
+            </label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" id="cancel-edit-camera">
+            Cancel
+          </button>
+          <button type="submit" class="btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
