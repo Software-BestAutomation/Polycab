@@ -114,7 +114,6 @@ body {
   fill: var(--text-clr);
 }
 
-#sidebar .camera-item span,
 #sidebar .dropdown-btn span {
   flex-grow: 1;
 }
@@ -749,6 +748,25 @@ body {
 #sidebar.close .camera-item {
   padding-left: 0.75rem;
   padding-right: 0.75rem;
+}
+
+/* Camera list item styles with icon */
+.camera-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+}
+
+.camera-item .material-symbols-outlined {
+  font-size: 1.2rem;
+  color: var(--secondary-text-clr);
+  flex-shrink: 0;
+}
+
+/* When sidebar is collapsed */
+#sidebar.close .camera-item .material-symbols-outlined {
+  margin-right: 0;
 }
 
 /* Add to styles.css */
@@ -1416,4 +1434,242 @@ input[type="number"]::-webkit-inner-spin-button {
 
 .add-btn span.material-symbols-outlined {
   font-size: 1.2rem;
+}
+
+/* requests.html */
+
+/* Requests Page Styles */
+.requests-table-container {
+  margin-top: 1.5rem;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--line-clr);
+  background-color: var(--secondary);
+}
+
+.requests-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--text-clr);
+}
+
+.requests-table th {
+  background-color: var(--primary);
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.requests-table td {
+  padding: 1rem;
+  border-top: 1px solid var(--line-clr);
+  font-size: 0.9rem;
+}
+
+.requests-table tr:hover {
+  background-color: var(--hover-clr);
+}
+
+/* Status indicators */
+.request-status {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.request-status.pending {
+  background-color: rgba(241, 196, 15, 0.2);
+  color: #f1c40f;
+}
+
+.request-status.approved {
+  background-color: rgba(46, 204, 113, 0.2);
+  color: #2ecc71;
+}
+
+.request-status.rejected {
+  background-color: rgba(231, 76, 60, 0.2);
+  color: #e74c3c;
+}
+
+/* Review button */
+.review-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--accent-clr);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.review-btn:hover {
+  background-color: #4d52ff;
+  transform: translateY(-1px);
+}
+
+.review-btn:active {
+  transform: translateY(0);
+}
+
+/* Badge styles */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0.25rem;
+  background-color: var(--accent-clr);
+  color: white;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+/* Responsive table */
+@media (max-width: 768px) {
+  .requests-table-container {
+    overflow-x: auto;
+  }
+
+  .requests-table {
+    min-width: 800px;
+  }
+
+  .review-btn span.material-symbols-outlined {
+    margin-right: 0;
+  }
+
+  .review-btn span:last-child {
+    display: none;
+  }
+}
+
+/* Request Details Modal Styles */
+.request-details {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+}
+
+.detail-label {
+  font-weight: 500;
+  color: var(--secondary-text-clr);
+  width: 120px;
+}
+
+.detail-value {
+  flex: 1;
+  padding: 0.5rem;
+  background-color: var(--secondary);
+  border-radius: var(--radius);
+}
+
+/* sessions.html */
+
+/* Sessions Page Styles */
+.sessions-table-container {
+  margin-top: 1.5rem;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--line-clr);
+  background-color: var(--secondary);
+}
+
+.sessions-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--text-clr);
+}
+
+.sessions-table th {
+  background-color: var(--primary);
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9rem;
+  position: sticky;
+  top: 0;
+}
+
+.sessions-table td {
+  padding: 1rem;
+  border-top: 1px solid var(--line-clr);
+  font-size: 0.9rem;
+}
+
+.sessions-table tr:hover {
+  background-color: var(--hover-clr);
+}
+
+.sessions-table tr.active-session {
+  background-color: rgba(78, 204, 163, 0.1);
+}
+
+.sessions-table tr.active-session:hover {
+  background-color: rgba(78, 204, 163, 0.15);
+}
+
+/* Simplified status badges */
+.status-badge {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-clr);
+}
+
+.status-badge.active {
+  background-color: rgba(78, 204, 163, 0.2);
+  color: var(--accent);
+}
+
+.status-badge.completed {
+  background-color: rgba(149, 165, 166, 0.2);
+}
+
+.status-badge.low {
+  background-color: rgba(78, 204, 163, 0.2);
+}
+
+.status-badge.moderate {
+  background-color: rgba(241, 196, 15, 0.2);
+}
+
+.status-badge.high {
+  background-color: rgba(231, 76, 60, 0.2);
+}
+
+/* Responsive table */
+@media (max-width: 768px) {
+  .sessions-table-container {
+    overflow-x: auto;
+  }
+
+  .sessions-table {
+    min-width: 800px;
+  }
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: var(--secondary-text-clr);
 }

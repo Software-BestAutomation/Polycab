@@ -118,6 +118,7 @@ function buildCameraList() {
       row.draggable = true;
       row.dataset.id = id;
       row.innerHTML = `
+        <span class="material-symbols-outlined">videocam</span>
         <div class="camera-left">
           <div class="camera-title">${name}</div>
           <div class="camera-subtitle">${lab}</div>
@@ -137,6 +138,7 @@ function buildCameraList() {
     list.appendChild(group);
   });
 
+  // Rest of the function remains the same...
   const searchInput = document.getElementById("camera-search");
   if (searchInput) {
     searchInput.addEventListener("input", () => {

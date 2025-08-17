@@ -1,4 +1,26 @@
-<div class="page-wrap">
-  <h2>Sessions / History</h2>
-  <div id="sessions-mount"></div>
-</div>
+<section class="page-wrap">
+  <div class="page-header">
+    <h2>Sessions / History</h2>
+    <div class="badge" id="sessions-count">0</div>
+  </div>
+
+  <!-- Sessions Table -->
+  <div class="sessions-table-container">
+    <table class="sessions-table">
+      <thead>
+        <tr>
+          <th>Client ID</th>
+          <th>Camera</th>
+          <th>Lab</th>
+          <th>Start Time</th>
+          <th>End Time</th>
+          <th>Duration</th>
+          <th>PTZ Usage</th>
+        </tr>
+      </thead>
+      <tbody id="sessions-table-body">
+        <!-- Sessions will be added here dynamically -->
+      </tbody>
+    </table>
+  </div>
+</section>
