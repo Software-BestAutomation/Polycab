@@ -1,3 +1,5 @@
+import { getPTZSpeed as getSettingsPTZSpeed } from "./settings.js";
+
 let dash;
 let streams = [];
 let activeStreamId = null;
@@ -129,6 +131,11 @@ function ptzSafety() {
 }
 
 function getPTZSpeed() {
+  // First try to get from settings module
+  const settingsSpeed = getSettingsPTZSpeed();
+  if (settingsSpeed) return settingsSpeed;
+
+  // Fallback to UI element
   const el = document.getElementById("ptz-speed");
   const v = parseInt(el?.value || "5", 10);
   return Number.isFinite(v) ? v : 5;

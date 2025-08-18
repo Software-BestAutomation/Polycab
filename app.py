@@ -36,18 +36,14 @@ def timestamp():
 
 
 def send_ptz(ip, action, code=None, speed=5):
-    """
-    CP Plus style:
-      /cgi-bin/ptz.cgi?action={start|stop}&channel=1&code={Left|Right|Up|Down|ZoomTele|ZoomWide|FocusNear|FocusFar}&arg1=0&arg2={speed}&arg3=0
-    """
     base = http_base(ip)
-    url = f"{base}/cgi-bin/ptz.cgi?action={action}&channel=1"
+    ptz_action = 'continue' if action == 'start' else 'stop'
+    url = f"{base}/cgi-bin/ptz.cgi?action={ptz_action}&channel=1"
     if code:
         url += f"&code={code}&arg1=0&arg2={speed}&arg3=0"
-
     r = requests.get(url, auth=HTTPDigestAuth(USERNAME, PASSWORD), timeout=4)
     if r.status_code == 200:
-        return True, f"PTZ {action} {code or ''} ok"
+        return True, f"PTZ {ptz_action} {code or ''} ok"
     return False, f"PTZ failed ({r.status_code})"
 
 
