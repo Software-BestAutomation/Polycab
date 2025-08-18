@@ -1,10 +1,61 @@
-// Sample data - in a real app, this would come from your backend
 let labs = [];
+
+function renderLabsTable() {
+  const labsTableBody = document.getElementById("labs-table-body");
+  if (!labsTableBody) return;
+
+  if (labs.length === 0) {
+    labsTableBody.innerHTML = `
+      <tr><td colspan="5" class="empty-state">No labs found. Click "Add Lab" to create one.</td></tr>`;
+    return;
+  }
+
+  labsTableBody.innerHTML = labs
+    .map(
+      (lab) => `
+    <tr>
+      <td>${lab.name}</td>
+      <td>${lab.totalCameras}</td>
+      <td>${lab.onlineCameras}</td>
+      <td><span class="lab-status ${lab.status}">${lab.status}</span></td>
+      <td>
+        <div class="action-buttons">
+          <button class="action-btn edit" onclick="window.labEdit(${lab.id})"><span class="material-symbols-outlined">edit</span></button>
+          <button class="action-btn delete" onclick="window.labDelete(${lab.id})"><span class="material-symbols-outlined">delete</span></button>
+        </div>
+      </td>
+    </tr>`
+    )
+    .join("");
+}
 
 async function fetchLabs() {
   const response = await fetch("/api/labs");
   labs = await response.json();
   renderLabsTable();
+}
+
+async function addLabToServer(payload) {
+  await fetch("/api/labs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  await fetchLabs();
+}
+
+async function updateLabOnServer(id, payload) {
+  await fetch(`/api/labs/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  await fetchLabs();
+}
+
+async function deleteLabOnServer(id) {
+  await fetch(`/api/labs/${id}`, { method: "DELETE" });
+  await fetchLabs();
 }
 
 export function init() {
@@ -22,10 +73,7 @@ export function init() {
   const labsTableBody = document.getElementById("labs-table-body");
 
   fetchLabs();
-  // Initialize the table
-  renderLabsTable();
 
-  // Open add modal
   if (addLabBtn) {
     addLabBtn.addEventListener("click", () => {
       addLabModal.classList.add("active");
@@ -33,7 +81,6 @@ export function init() {
     });
   }
 
-  // Close add modal
   function closeAddModal() {
     addLabModal.classList.remove("active");
     document.body.style.overflow = "";
@@ -43,7 +90,6 @@ export function init() {
   if (closeModalBtn) closeModalBtn.addEventListener("click", closeAddModal);
   if (cancelBtn) cancelBtn.addEventListener("click", closeAddModal);
 
-  // Close when clicking outside
   addLabModal.addEventListener("click", (e) => {
     if (
       e.target === addLabModal ||
@@ -53,37 +99,22 @@ export function init() {
     }
   });
 
-  // Form submission
   if (addLabForm) {
-    addLabForm.addEventListener("submit", (e) => {
+    addLabForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      const labName = document.getElementById("lab-name").value;
-      const maxCameras = parseInt(document.getElementById("max-cameras").value);
-      const status = document.getElementById("lab-status").value;
-      const description = document.getElementById("lab-description").value;
-
-      // Generate random camera counts for demonstration
-      const totalCameras = Math.floor(Math.random() * maxCameras) + 1; // 1 to maxCameras
-      const onlineCameras = Math.floor(Math.random() * (totalCameras + 1)); // 0 to totalCameras
-
-      const newLab = {
-        id: labs.length + 1,
-        name: labName,
-        maxCameras: maxCameras,
-        totalCameras: totalCameras,
-        onlineCameras: onlineCameras,
-        status: status,
-        description: description,
+      const payload = {
+        name: document.getElementById("lab-name").value,
+        maxCameras: parseInt(document.getElementById("max-cameras").value),
+        status: document.getElementById("lab-status").value,
+        description: document.getElementById("lab-description").value,
       };
 
-      labs.push(newLab);
-      renderLabsTable();
+      await addLabToServer(payload);
       closeAddModal();
     });
   }
 
-  // Edit modal functions
   function openEditModal(labId) {
     const lab = labs.find((l) => l.id === labId);
     if (!lab) return;
@@ -98,33 +129,21 @@ export function init() {
     document.body.style.overflow = "hidden";
   }
 
-  // Edit form submission
   if (editLabForm) {
-    editLabForm.addEventListener("submit", (e) => {
+    editLabForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
       const labId = parseInt(document.getElementById("edit-lab-id").value);
-      const labName = document.getElementById("edit-lab-name").value;
-      const maxCameras = parseInt(
-        document.getElementById("edit-max-cameras").value
-      );
-      const status = document.getElementById("edit-lab-status").value;
-      const description = document.getElementById("edit-lab-description").value;
 
-      const labIndex = labs.findIndex((l) => l.id === labId);
-      if (labIndex !== -1) {
-        // Preserve existing camera counts when editing
-        labs[labIndex] = {
-          ...labs[labIndex],
-          name: labName,
-          maxCameras: maxCameras,
-          status: status,
-          description: description,
-        };
+      const payload = {
+        name: document.getElementById("edit-lab-name").value,
+        maxCameras: parseInt(document.getElementById("edit-max-cameras").value),
+        status: document.getElementById("edit-lab-status").value,
+        description: document.getElementById("edit-lab-description").value,
+      };
 
-        renderLabsTable();
-        closeEditModal();
-      }
+      await updateLabOnServer(labId, payload);
+      closeEditModal();
     });
   }
 
@@ -137,7 +156,6 @@ export function init() {
   if (closeEditModalBtn)
     closeEditModalBtn.addEventListener("click", closeEditModal);
   if (cancelEditBtn) cancelEditBtn.addEventListener("click", closeEditModal);
-
   editLabModal.addEventListener("click", (e) => {
     if (
       e.target === editLabModal ||
@@ -147,57 +165,10 @@ export function init() {
     }
   });
 
-  // Render the labs table
-  function renderLabsTable() {
-    if (!labsTableBody) return;
-
-    if (labs.length === 0) {
-      labsTableBody.innerHTML = `
-        <tr>
-          <td colspan="5" class="empty-state">
-            No labs found. Click "Add Lab" to create one.
-          </td>
-        </tr>
-      `;
-      return;
-    }
-
-    labsTableBody.innerHTML = labs
-      .map(
-        (lab) => `
-      <tr>
-        <td>${lab.name}</td>
-        <td>${lab.totalCameras}</td>
-        <td>${lab.onlineCameras}</td>
-        <td>
-          <span class="lab-status ${lab.status}">
-            ${lab.status.charAt(0).toUpperCase() + lab.status.slice(1)}
-          </span>
-        </td>
-        <td>
-          <div class="action-buttons">
-            <button class="action-btn edit" onclick="window.labEdit(${lab.id})">
-              <span class="material-symbols-outlined">edit</span>
-            </button>
-            <button class="action-btn delete" onclick="window.labDelete(${
-              lab.id
-            })">
-              <span class="material-symbols-outlined">delete</span>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `
-      )
-      .join("");
-  }
-
-  // Expose functions to window for inline event handlers
   window.labEdit = openEditModal;
-  window.labDelete = (labId) => {
+  window.labDelete = async (id) => {
     if (confirm("Are you sure you want to delete this lab?")) {
-      labs = labs.filter((l) => l.id !== labId);
-      renderLabsTable();
+      await deleteLabOnServer(id);
     }
   };
 }
