@@ -199,6 +199,13 @@ function showView(viewId) {
   closeAllSubMenus();
   ensurePartialLoaded(viewId);
   ensureModuleLoaded(viewId);
+
+  if (viewId === "settings") {
+    import("/static/js/views/settings.js").then((m) => {
+      if (m && m.loadSettings) m.loadSettings();
+      if (m && m.initSpeedUI) m.initSpeedUI();
+    });
+  }
 }
 
 document.getElementById("sidebar").addEventListener("click", (e) => {

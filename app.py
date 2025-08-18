@@ -6,8 +6,10 @@ import threading
 import requests
 from flask import Flask, request, jsonify, render_template, Response, send_file
 from requests.auth import HTTPDigestAuth
+from db import get_conn, init_db 
 
 app = Flask(__name__)
+init_db() 
 
 # ---- Camera inventory ----
 # If all use same credentials, keep here. If different, set per entry.
@@ -37,14 +39,16 @@ def timestamp():
 
 def send_ptz(ip, action, code=None, speed=5):
     base = http_base(ip)
-    ptz_action = 'continue' if action == 'start' else 'stop'
+    ptz_action = 'start' if action == 'start' else 'stop'
     url = f"{base}/cgi-bin/ptz.cgi?action={ptz_action}&channel=1"
     if code:
         url += f"&code={code}&arg1=0&arg2={speed}&arg3=0"
+    print("url: ", url)
     r = requests.get(url, auth=HTTPDigestAuth(USERNAME, PASSWORD), timeout=4)
     if r.status_code == 200:
         return True, f"PTZ {ptz_action} {code or ''} ok"
     return False, f"PTZ failed ({r.status_code})"
+
 
 
 def mjpeg_generator(rtsp):
@@ -175,6 +179,71 @@ def snapshot():
     if not path:
         return jsonify({"error": "capture failed"}), 500
     return send_file(path, mimetype="image/jpeg", as_attachment=True)
+
+# DB API's
+
+@app.route("/api/labs")
+def list_labs():
+    con = get_conn()
+    cur = con.cursor()
+    cur.execute("""
+        SELECT Lab_ID, Lab_name,
+        (SELECT COUNT(*) FROM Camera_Setting WHERE Camera_ID = Lab_Setting.Camera_ID) as Total
+        FROM Lab_Setting
+    """)
+    rows = cur.fetchall()
+    labs = []
+    for row in rows:
+        labs.append({
+            "id": row.Lab_ID,
+            "name": row.Lab_name,
+            "maxCameras": 0,
+            "totalCameras": row.Total,
+            "onlineCameras": 0,
+            "status": "active",
+            "description": ""
+        })
+    return jsonify(labs)
+
+@app.route("/api/cameras")
+def list_cameras():
+    """
+    Returns:
+      [
+        {
+          "id": 1,
+          "name": "Cam-EL-01",
+          "ipAddress": "192.168.1.101",
+          "lab": "Electronics Lab",
+          "status": "offline",
+          "ptzSupport": True
+        },
+        ...
+      ]
+    """
+    con = get_conn()
+    cur = con.cursor()
+    # Join Camera_Setting with Lab_Setting so we know to which lab a camera is mapped
+    cur.execute("""
+        SELECT c.Camera_ID, c.Camera_Name, c.Camera_IP, l.Lab_name
+        FROM Camera_Setting c
+        LEFT JOIN Lab_Setting l ON c.Camera_ID = l.Camera_ID
+    """)
+    rows = cur.fetchall()
+
+    cameras = []
+    for row in rows:
+        cameras.append({
+            "id": row.Camera_ID,
+            "name": row.Camera_Name,
+            "ipAddress": row.Camera_IP,
+            "lab": row.Lab_name,
+            # defaults (can be updated later)
+            "status": "offline",
+            "ptzSupport": True
+        })
+    return jsonify(cameras)
+
 
 
 if __name__ == "__main__":

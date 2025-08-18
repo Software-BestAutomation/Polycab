@@ -1,22 +1,11 @@
 // Sample data - in a real app, this would come from your backend
-let cameras = [
-  {
-    id: 1,
-    name: "Cam-EL-01",
-    ipAddress: "192.168.1.101",
-    lab: "Electronics Lab",
-    status: "online",
-    ptzSupport: true,
-  },
-  {
-    id: 2,
-    name: "Cam-ME-01",
-    ipAddress: "192.168.1.102",
-    lab: "Mechanical Lab",
-    status: "online",
-    ptzSupport: false,
-  },
-];
+let cameras = [];
+
+async function fetchCameras() {
+  const resp = await fetch("/api/cameras");
+  cameras = await resp.json();
+  renderCamerasTable();
+}
 
 export function init() {
   const addCameraBtn = document.getElementById("add-camera-btn");
@@ -31,6 +20,8 @@ export function init() {
   const editCameraForm = document.getElementById("edit-camera-form");
 
   const camerasTableBody = document.getElementById("cameras-table-body");
+
+  fetchCameras();
 
   // Initialize the table
   renderCamerasTable();

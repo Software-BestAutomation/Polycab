@@ -138,6 +138,7 @@ function getPTZSpeed() {
   // Fallback to UI element
   const el = document.getElementById("ptz-speed");
   const v = parseInt(el?.value || "5", 10);
+  console.log("PTZ speed: ", v);
   return Number.isFinite(v) ? v : 5;
 }
 
@@ -168,6 +169,7 @@ async function postJSON(url, body) {
 
 export async function startPTZ(dir) {
   if (!activeStreamId) return;
+  console.log("activeStreamId ", activeStreamId);
   await postJSON("/ptz_control", {
     cam_id: activeStreamId,
     action: "start",
@@ -210,3 +212,10 @@ export function captureSnapshot() {
     activeStreamId
   )}`;
 }
+
+// ---- expose for inline HTML ----
+window.startPTZ = startPTZ;
+window.stopPTZ = stopPTZ;
+window.startZoom = startZoom;
+window.stopZoom = stopZoom;
+window.captureSnapshot = captureSnapshot;

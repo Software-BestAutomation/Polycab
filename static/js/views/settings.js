@@ -10,6 +10,20 @@ export function init() {
 }
 
 function loadSettings() {
+  const slider = document.getElementById("settings-ptz-speed");
+  const badge = document.getElementById("settings-ptz-speed-value");
+  const server = document.getElementById("server-ip");
+
+  // If settings view is not loaded yet, simply return
+  if (!slider || !badge || !server) {
+    return;
+  }
+
+  // Apply saved values
+  slider.value = settings.ptzSpeed;
+  badge.textContent = settings.ptzSpeed;
+  server.value = settings.serverIP;
+
   const savedSettings = localStorage.getItem("cameraSettings");
   if (savedSettings) {
     try {
@@ -38,7 +52,7 @@ function loadSettings() {
   }
 }
 
-function initSpeedUI() {
+export function initSpeedUI() {
   const input = document.getElementById("settings-ptz-speed");
   const badge = document.getElementById("settings-ptz-speed-value");
   if (!input || !badge) return;
@@ -47,10 +61,22 @@ function initSpeedUI() {
   badge.textContent = settings.ptzSpeed;
 
   input.addEventListener("input", () => {
-    badge.textContent = input.value;
+    const newSpeed = parseInt(input.value, 10);
+    badge.textContent = newSpeed;
+    settings.ptzSpeed = newSpeed; // Update settings immediately
+
+    // Optional: Update main control if exists
+    const mainPtzSpeed = document.getElementById("ptz-speed");
+    if (mainPtzSpeed) {
+      mainPtzSpeed.value = newSpeed;
+      const mainPtzValue = document.getElementById("ptz-speed-value");
+      if (mainPtzValue) mainPtzValue.textContent = newSpeed;
+    }
+
     badge.style.transform = "scale(1.2)";
     setTimeout(() => (badge.style.transform = "scale(1)"), 200);
   });
+  console.log("Current PTZ speed:", settings.ptzSpeed); // After loading
 }
 
 function setupSaveButton() {

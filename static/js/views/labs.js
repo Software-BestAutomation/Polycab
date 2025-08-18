@@ -1,24 +1,11 @@
 // Sample data - in a real app, this would come from your backend
-let labs = [
-  {
-    id: 1,
-    name: "Electronics Lab",
-    maxCameras: 5,
-    totalCameras: 3,
-    onlineCameras: 2,
-    description: "Main electronics research lab",
-    status: "active",
-  },
-  {
-    id: 2,
-    name: "Mechanical Lab",
-    maxCameras: 4,
-    totalCameras: 2,
-    onlineCameras: 1,
-    description: "Mechanical engineering lab",
-    status: "active",
-  },
-];
+let labs = [];
+
+async function fetchLabs() {
+  const response = await fetch("/api/labs");
+  labs = await response.json();
+  renderLabsTable();
+}
 
 export function init() {
   const addLabBtn = document.getElementById("add-lab-btn");
@@ -34,6 +21,7 @@ export function init() {
 
   const labsTableBody = document.getElementById("labs-table-body");
 
+  fetchLabs();
   // Initialize the table
   renderLabsTable();
 
