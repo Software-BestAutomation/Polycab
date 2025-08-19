@@ -60,6 +60,7 @@ async function addCameraToServer(payload) {
     body: JSON.stringify(payload),
   });
   await fetchCameras();
+  window.buildCameraList();
 }
 
 async function updateCameraOnServer(id, payload) {
@@ -69,11 +70,19 @@ async function updateCameraOnServer(id, payload) {
     body: JSON.stringify(payload),
   });
   await fetchCameras();
+  window.buildCameraList();
 }
 
 async function deleteCameraOnServer(id) {
   await fetch(`/api/cameras/${id}`, { method: "DELETE" });
   await fetchCameras();
+  window.buildCameraList();
+}
+
+export async function pingAndRefresh() {
+  await fetch("/api/cameras/ping");
+  await fetchCameras();
+  window.buildCameraList();
 }
 
 export function init() {
@@ -90,6 +99,7 @@ export function init() {
 
   fetchLabs(); // <--- load labs dropdown
   fetchCameras();
+  setInterval(pingAndRefresh, 5000);
 
   // === OPEN ADD ===
   if (addCameraBtn) {
@@ -199,3 +209,5 @@ export function init() {
     }
   };
 }
+
+// ping all cameras and refresh table + sidebar

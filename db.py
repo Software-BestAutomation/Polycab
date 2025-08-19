@@ -43,8 +43,9 @@ def init_db():
             Camera_ID INT IDENTITY(1,1) PRIMARY KEY,
             Camera_IP NVARCHAR(50),
             Camera_Name NVARCHAR(100),
-            Status NVARCHAR(50),             -- online / offline
-            PTZ_Support BIT                  -- 1 = PTZ supported, 0 = no
+            Status NVARCHAR(50),
+            PTZ_Support BIT,
+            Lab_ID INT NULL  -- <--- NEW
         )
         """
         )
@@ -59,8 +60,7 @@ def init_db():
             Total_Cameras INT,
             Online_Cameras INT,
             Status NVARCHAR(50),
-            Description NVARCHAR(255),
-            Camera_ID INT FOREIGN KEY REFERENCES Camera_Setting(Camera_ID)
+            Description NVARCHAR(255)
         )
         """
         )

@@ -71,13 +71,7 @@ document.addEventListener("click", (e) => {
 });
 
 // ----- CAMERA LIST (sidebar) -----
-const CAMERA_META = {
-  1: { name: "Cam-EL-01", lab: "Electronics Lab", status: "online" },
-  2: { name: "Cam-EL-02", lab: "Electronics Lab", status: "online" },
-  3: { name: "Cam-ME-01", lab: "Mechanical Lab", status: "offline" },
-  4: { name: "Cam-EL-03", lab: "Electronics Lab", status: "online" },
-};
-
+// returns css class for the dot
 function statusClass(s) {
   if (!s) return "status-unknown";
   return s.toLowerCase() === "online"
@@ -87,46 +81,57 @@ function statusClass(s) {
     : "status-unknown";
 }
 
-function buildCameraList() {
+// call this on page load + whenever cameras change
+async function buildCameraList() {
   const list = document.getElementById("camera-list");
   if (!list) return;
+
+  // 1. fetch cameras from server
+  const resp = await fetch("/api/cameras");
+  const cameras = await resp.json();
+
+  // 2. group by lab
   const groups = {};
-  Object.entries(CAMERA_META).forEach(([id, meta]) => {
-    const lab = meta.lab || "Other";
+  cameras.forEach((cam) => {
+    const lab = cam.lab || "Unassigned";
     if (!groups[lab]) groups[lab] = [];
-    groups[lab].push({ id, ...meta });
+    groups[lab].push(cam);
   });
 
+  // 3. render
   list.innerHTML = "";
-  Object.entries(groups).forEach(([labName, cameras]) => {
+  Object.entries(groups).forEach(([labName, cams]) => {
     const group = document.createElement("div");
     group.className = "camera-group";
 
     const header = document.createElement("div");
     header.className = "camera-group-header";
-    header.innerHTML = `<h3>${labName}</h3>
-      <span class="count">${cameras.length}</span>
-      <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" width="20"><path d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z"/></svg>`;
+    header.innerHTML = `
+      <h3>${labName}</h3>
+      <span class="count">${cams.length}</span>
+      <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" width="20"><path d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z"/></svg>
+    `;
     header.onclick = () => group.classList.toggle("collapsed");
 
     const content = document.createElement("div");
     content.className = "camera-group-content";
 
-    cameras.forEach(({ id, name, lab, status }) => {
+    cams.forEach((c) => {
       const row = document.createElement("div");
       row.className = "camera-item camera-row";
       row.draggable = true;
-      row.dataset.id = id;
+      row.dataset.id = c.id;
       row.innerHTML = `
         <span class="material-symbols-outlined">videocam</span>
         <div class="camera-left">
-          <div class="camera-title">${name}</div>
-          <div class="camera-subtitle">${lab}</div>
+          <div class="camera-title">${c.name}</div>
+          <div class="camera-subtitle">${c.lab || "-"}</div>
         </div>
         <div class="camera-right">
-          <span class="status-dot ${statusClass(status)}"></span>
-          <span class="status-text">${status}</span>
-        </div>`;
+          <span class="status-dot ${statusClass(c.status)}"></span>
+          <span class="status-text">${c.status || "unknown"}</span>
+        </div>
+      `;
       row.addEventListener("dragstart", (e) =>
         e.dataTransfer.setData("id", row.dataset.id)
       );
@@ -138,7 +143,7 @@ function buildCameraList() {
     list.appendChild(group);
   });
 
-  // Rest of the function remains the same...
+  // enable sidebar filtering
   const searchInput = document.getElementById("camera-search");
   if (searchInput) {
     searchInput.addEventListener("input", () => {
@@ -281,6 +286,20 @@ async function ensureModuleLoaded(viewId) {
     _loadedModules.add(viewId);
   } catch (_) {}
 }
+
+// Ping cameras every ~20 seconds
+async function checkStatuses() {
+  try {
+    await fetch("/api/cameras/ping");
+    // after updating on server, refresh the sidebar list
+    buildCameraList();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+checkStatuses();
+setInterval(checkStatuses, 20000);
 
 // ---------- Init ----------
 window.addEventListener("load", () => {

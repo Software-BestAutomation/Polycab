@@ -16,14 +16,6 @@ init_db()
 USERNAME = "admin"
 PASSWORD = "admin123"
 
-CAMERAS = {
-    # id: { ip, rtsp(ch=1,subtype=0 main), http_base }
-    1: {"ip": "192.168.1.250"},
-    2: {"ip": "192.168.1.251"},
-    3: {"ip": "192.168.1.252"},
-    4: {"ip": "192.168.1.253"},
-}
-
 
 def rtsp_url(ip, user=USERNAME, pwd=PASSWORD, channel=1, subtype=0, port=554):
     return f"rtsp://{user}:{pwd}@{ip}:{port}/cam/realmonitor?channel={channel}&subtype={subtype}"
@@ -101,10 +93,15 @@ def video_feed():
     except ValueError:
         return "bad cam_id", 400
 
-    cam = CAMERAS.get(cam_id)
-    if not cam:
+    # fetch ip from DB (in case camera was added dynamically)
+    con = get_conn()
+    cur = con.cursor()
+    ip = cur.execute(
+        "SELECT Camera_IP FROM Camera_Setting WHERE Camera_ID = ?", (cam_id,)
+    ).fetchval()
+    if not ip:
         return "unknown camera", 404
-    rtsp = rtsp_url(cam["ip"])
+    rtsp = rtsp_url(ip)
     return Response(
         mjpeg_generator(rtsp), mimetype="multipart/x-mixed-replace; boundary=frame"
     )
@@ -121,13 +118,17 @@ def ptz_control():
     direction = data.get("direction")
     speed = int(data.get("speed", 5))
 
-    cam = CAMERAS.get(cam_id)
-    if not cam:
+    con = get_conn()
+    cur = con.cursor()
+    ip = cur.execute(
+        "SELECT Camera_IP FROM Camera_Setting WHERE Camera_ID = ?", (cam_id,)
+    ).fetchval()
+    if not ip:
         return jsonify({"error": "unknown camera"}), 404
     if action not in ("start", "stop"):
         return jsonify({"error": "invalid action"}), 400
 
-    ok, msg = send_ptz(cam["ip"], action, direction, speed)
+    ok, msg = send_ptz(ip, action, direction, speed)
     if ok:
         return jsonify({"message": msg})
     return jsonify({"error": msg}), 500
@@ -143,11 +144,17 @@ def zoom_control():
     action = data.get("action", "start")
     zoom_code = data.get("zoom")
 
-    cam = CAMERAS.get(cam_id)
-    if not cam:
+    # fetch the IP of this camera from database
+    con = get_conn()
+    cur = con.cursor()
+    ip = cur.execute(
+        "SELECT Camera_IP FROM Camera_Setting WHERE Camera_ID = ?", (cam_id,)
+    ).fetchval()
+
+    if not ip:
         return jsonify({"error": "unknown camera"}), 404
 
-    ok, msg = send_ptz(cam["ip"], action, zoom_code, speed=5)
+    ok, msg = send_ptz(ip, action, zoom_code, speed=5)
     if ok:
         return jsonify({"message": msg})
     return jsonify({"error": msg}), 500
@@ -221,14 +228,14 @@ def get_cameras():
     cur = con.cursor()
     cur.execute(
         """
-        SELECT c.Camera_ID,
-               c.Camera_Name,
-               c.Camera_IP,
-               c.Status,
-               c.PTZ_Support,
-               l.Lab_name
-        FROM Camera_Setting c
-        LEFT JOIN Lab_Setting l ON c.Camera_ID = l.Camera_ID
+    SELECT c.Camera_ID,
+           c.Camera_Name,
+           c.Camera_IP,
+           c.Status,
+           c.PTZ_Support,
+           l.Lab_name
+    FROM Camera_Setting c
+    LEFT JOIN Lab_Setting l ON c.Lab_ID = l.Lab_ID
     """
     )
     rows = cur.fetchall()
@@ -327,18 +334,18 @@ def add_camera():
 
     # insert camera with default values
     ptz_value = 1 if ptz else 0
+    lab_id = row.Lab_ID if lab_name else None
+
     cur.execute(
-        "INSERT INTO Camera_Setting (Camera_Name, Camera_IP, Status, PTZ_Support) VALUES (?,?,?,?)",
-        (name, ip, "offline", ptz_value),
+        "INSERT INTO Camera_Setting (Camera_Name, Camera_IP, Status, PTZ_Support, Lab_ID) VALUES (?,?,?,?,?)",
+        (name, ip, "offline", ptz_value, lab_id),
     )
     camera_id = cur.execute("SELECT @@IDENTITY").fetchval()
 
-    # update mapping + increment total
     if lab_name:
-        lab_id = row.Lab_ID
         cur.execute(
-            "UPDATE Lab_Setting SET Total_Cameras = Total_Cameras + 1, Camera_ID = ? WHERE Lab_ID = ?",
-            (camera_id, lab_id),
+            "UPDATE Lab_Setting SET Total_Cameras = Total_Cameras + 1 WHERE Lab_ID = ?",
+            (lab_id,),
         )
 
     con.commit()
@@ -358,28 +365,21 @@ def update_camera(camera_id):
     con = get_conn()
     cur = con.cursor()
 
-    cur.execute(
-        """
-        UPDATE Camera_Setting
-        SET Camera_Name = ?, Camera_IP = ?, Status = ?, PTZ_Support = ?
-        WHERE Camera_ID = ?
-    """,
-        (name, ip, status, ptz_support, camera_id),
-    )
-
     # update lab mapping
+    lab_id = None
     if lab:
-        cur.execute(
-            "UPDATE Lab_Setting SET Camera_ID = NULL WHERE Camera_ID = ?", (camera_id,)
-        )
         lab_id = cur.execute(
             "SELECT Lab_ID FROM Lab_Setting WHERE Lab_name = ?", (lab,)
         ).fetchval()
-        if lab_id:
-            cur.execute(
-                "UPDATE Lab_Setting SET Camera_ID = ? WHERE Lab_ID = ?",
-                (camera_id, lab_id),
-            )
+
+    cur.execute(
+        """
+        UPDATE Camera_Setting
+        SET Camera_Name = ?, Camera_IP = ?, Status = ?, PTZ_Support = ?, Lab_ID = ?
+        WHERE Camera_ID = ?
+        """,
+        (name, ip, status, ptz_support, lab_id, camera_id),
+    )
 
     con.commit()
     return jsonify({"message": "Camera updated"})
@@ -390,12 +390,76 @@ def update_camera(camera_id):
 def delete_camera(camera_id):
     con = get_conn()
     cur = con.cursor()
-    cur.execute(
-        "UPDATE Lab_Setting SET Camera_ID = NULL WHERE Camera_ID = ?", (camera_id,)
-    )
+    # fetch lab_id for that camera
+    lab_id = cur.execute(
+        "SELECT Lab_ID FROM Camera_Setting WHERE Camera_ID = ?", (camera_id,)
+    ).fetchval()
+
+    # delete camera
     cur.execute("DELETE FROM Camera_Setting WHERE Camera_ID = ?", (camera_id,))
+
+    # decrement total if assigned
+    if lab_id:
+        cur.execute(
+            "UPDATE Lab_Setting SET Total_Cameras = Total_Cameras - 1 WHERE Lab_ID = ?",
+            (lab_id,),
+        )
     con.commit()
     return jsonify({"message": "Camera deleted"})
+
+
+# GET /api/cameras/ping
+@app.route("/api/cameras/ping", methods=["GET"])
+def ping_cameras():
+    con = get_conn()
+    cur = con.cursor()
+
+    # fetch all cameras
+    rows = cur.execute(
+        """
+    SELECT Camera_ID, Camera_IP, Lab_ID
+    FROM Camera_Setting
+    """
+    ).fetchall()
+
+    online_count_per_lab = {}
+
+    for row in rows:
+        cam_id = row.Camera_ID
+        ip = row.Camera_IP
+        lab_id = row.Lab_ID
+
+        try:
+            # make a request to /magicBox
+            r = requests.get(
+                f"http://{ip}/cgi-bin/magicBox.cgi?action=getSystemInfo",
+                auth=HTTPDigestAuth(USERNAME, PASSWORD),
+                timeout=2,
+            )
+            status = "online" if r.status_code == 200 else "offline"
+        except Exception:
+            status = "offline"
+
+        # update Camera_Setting
+        cur.execute(
+            "UPDATE Camera_Setting SET Status=? WHERE Camera_ID=?", (status, cam_id)
+        )
+
+        # keep track of online per lab
+        if lab_id:
+            if lab_id not in online_count_per_lab:
+                online_count_per_lab[lab_id] = 0
+            if status == "online":
+                online_count_per_lab[lab_id] += 1
+
+    # update Online_Cameras in Lab_Setting
+    for lab_id, count in online_count_per_lab.items():
+        cur.execute(
+            "UPDATE Lab_Setting SET Online_Cameras=? WHERE Lab_ID=?", (count, lab_id)
+        )
+
+    con.commit()
+    return jsonify({"message": "Statuses updated"})
 
 
 if __name__ == "__main__":
