@@ -3,24 +3,33 @@ import pyodbc
 
 DB_NAME = "PolycabDB"
 
+# Connection settings
+SERVER = "localhost,1433"
+USERNAME = "sa"
+PASSWORD = "Codehelp4563"   # replace with your actual SA password
+
+
+BASE_CONN_STR = (
+    "DRIVER={ODBC Driver 18 for SQL Server};"
+    f"SERVER={SERVER};"
+    "Encrypt=no;"
+    "TrustServerCertificate=yes;"
+)
+
+
 
 def get_master_conn():
-    """Connect to the SQL Server master DB (Windows Auth)"""
+    """Connect to the SQL Server master DB (SQL Auth)"""
     return pyodbc.connect(
-        "Driver={ODBC Driver 17 for SQL Server};"
-        "Server=BESTAUTOMATION\\SQLEXPRESS;"
-        "Database=master;"
-        "Trusted_Connection=yes;",
+        BASE_CONN_STR + f"DATABASE=master;UID={USERNAME};PWD={PASSWORD};",
         autocommit=True,
     )
 
 
 def get_conn():
-    """Connect to the application DB (Windows Auth)"""
+    """Connect to the application DB (SQL Auth)"""
     return pyodbc.connect(
-        "Driver={ODBC Driver 17 for SQL Server};"
-        f"Server=BESTAUTOMATION\\SQLEXPRESS;Database={DB_NAME};"
-        "Trusted_Connection=yes;"
+        BASE_CONN_STR + f"DATABASE={DB_NAME};UID={USERNAME};PWD={PASSWORD};"
     )
 
 
