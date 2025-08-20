@@ -8,7 +8,7 @@ def get_master_conn():
     """Connect to the SQL Server master DB (Windows Auth)"""
     return pyodbc.connect(
         "Driver={ODBC Driver 17 for SQL Server};"
-        "Server=DESKTOP-7K4CNP4\\SQLEXPRESS;"
+        "Server=BESTAUTOMATION\\SQLEXPRESS;"
         "Database=master;"
         "Trusted_Connection=yes;",
         autocommit=True,
@@ -19,7 +19,7 @@ def get_conn():
     """Connect to the application DB (Windows Auth)"""
     return pyodbc.connect(
         "Driver={ODBC Driver 17 for SQL Server};"
-        f"Server=DESKTOP-7K4CNP4\\SQLEXPRESS;Database={DB_NAME};"
+        f"Server=BESTAUTOMATION\\SQLEXPRESS;Database={DB_NAME};"
         "Trusted_Connection=yes;"
     )
 

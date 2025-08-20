@@ -51,11 +51,13 @@ function renderStreams() {
     return;
   }
   if (streams.length === 1) {
-    dash.classList.add("single-stream");
-  } else {
-    const cols = Math.ceil(Math.sqrt(streams.length));
-    dash.style.gridTemplateColumns = `repeat(${cols},1fr)`;
-  }
+  dash.classList.add("single-stream");
+  dash.style.gridTemplateColumns = "1fr";  // <-- reset
+} else {
+  dash.classList.remove("single-stream");
+  const cols = Math.ceil(Math.sqrt(streams.length));
+  dash.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+}
 
   streams.forEach((id) => {
     const cell = document.createElement("div");
