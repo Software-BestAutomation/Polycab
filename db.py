@@ -61,17 +61,16 @@ def init_db():
         # Lab settings
         cur.execute(
             """
-        IF OBJECT_ID('Lab_Setting') IS NULL
-        CREATE TABLE Lab_Setting (
-            Lab_ID INT IDENTITY(1,1) PRIMARY KEY,
-            Lab_name NVARCHAR(100),
-            Max_Cameras INT,
-            Total_Cameras INT,
-            Online_Cameras INT,
-            Status NVARCHAR(50),
-            Description NVARCHAR(255)
-        )
-        """
+            IF OBJECT_ID('Lab_Setting') IS NULL
+            CREATE TABLE Lab_Setting (
+                Lab_ID INT IDENTITY(1,1) PRIMARY KEY,
+                Lab_name NVARCHAR(100),
+                Total_Cameras INT,
+                Online_Cameras INT,
+                Status NVARCHAR(50),
+                Description NVARCHAR(255)
+            )
+            """
         )
         # Work_Camera_Lab_Detail
         cur.execute(

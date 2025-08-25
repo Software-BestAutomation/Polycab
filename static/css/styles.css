@@ -61,7 +61,7 @@ body {
   list-style: none;
 }
 
-#sidebar > ul > li:first-child {
+#sidebar>ul>li:first-child {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 16px;
@@ -130,7 +130,7 @@ body {
   overflow: hidden;
 }
 
-#sidebar .sub-menu > div {
+#sidebar .sub-menu>div {
   min-height: 0;
   overflow: hidden;
 }
@@ -291,7 +291,7 @@ body {
     top: unset;
     bottom: 0;
 
-    > ul {
+    >ul {
       padding: 0;
       display: grid;
       grid-auto-columns: 60px;
@@ -331,7 +331,7 @@ body {
       display: flex;
       justify-content: center;
 
-      > div {
+      >div {
         overflow-x: auto;
       }
 
@@ -874,6 +874,7 @@ body {
 .view-container {
   display: none;
 }
+
 .view-container.active {
   display: grid;
 }
@@ -892,6 +893,7 @@ body {
   align-items: center;
   gap: 1em;
 }
+
 #sidebar .nav-item:hover {
   background-color: var(--hover-clr);
   cursor: pointer;
@@ -923,9 +925,46 @@ body {
     border-radius: 0;
     justify-content: center;
   }
+
   #sidebar .nav-item .badge {
     display: none;
   }
+}
+
+
+/* Control panel show/hide with transition */
+.control-panel {
+  overflow: hidden;
+  max-height: 0;
+  /* collapsed by default */
+  opacity: 0;
+  transform: translateY(8px);
+  transition: max-height 300ms ease, opacity 250ms ease, transform 250ms ease;
+  pointer-events: none;
+  /* avoid interacting while hidden */
+  background: transparent;
+  /* keep your layout clean */
+  padding-top: 0;
+  /* avoid jump when hidden */
+}
+
+/* When there’s at least one active stream AND we’re on the dashboard */
+.control-panel.panel-visible {
+  max-height: 400px;
+  /* big enough to fit the controls row */
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  padding-top: 0.25rem;
+  /* re-enable your spacing when visible */
+}
+
+/* Force-hide the panel when not on the dashboard view */
+.control-panel.panel-hide-view {
+  max-height: 0 !important;
+  opacity: 0 !important;
+  transform: translateY(8px) !important;
+  pointer-events: none !important;
 }
 
 /* labs.html */

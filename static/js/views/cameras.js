@@ -20,11 +20,9 @@ function renderCamerasTable() {
       <td><span class="status-indicator ${c.status}">${c.status}</span></td>
       <td>${c.ptzSupport ? "Yes" : "No"}</td>
       <td>
-        <button class="action-btn edit" onclick="window.cameraEdit(${
-          c.id
+        <button class="action-btn edit" onclick="window.cameraEdit(${c.id
         })"><span class="material-symbols-outlined">edit</span></button>
-        <button class="action-btn delete" onclick="window.cameraDelete(${
-          c.id
+        <button class="action-btn delete" onclick="window.cameraDelete(${c.id
         })"><span class="material-symbols-outlined">delete</span></button>
       </td>
     </tr>`
@@ -101,6 +99,14 @@ export function init() {
   fetchCameras();
   setInterval(pingAndRefresh, 5000);
 
+  if (addCameraBtn) {
+    addCameraBtn.addEventListener("click", async () => {
+      await fetchLabs();                // <--- ensure fresh
+      addCameraModal.classList.add("active");
+      document.body.style.overflow = "hidden";
+    });
+  }
+
   // === OPEN ADD ===
   if (addCameraBtn) {
     addCameraBtn.addEventListener("click", () => {
@@ -149,18 +155,23 @@ export function init() {
 
   // === OPEN EDIT ===
   function openEditModal(id) {
-    const cam = cameras.find((c) => c.id === id);
-    if (!cam) return;
-    document.getElementById("edit-camera-id").value = cam.id;
-    document.getElementById("edit-camera-name").value = cam.name;
-    document.getElementById("edit-ip-address").value = cam.ipAddress;
-    document.getElementById("edit-camera-lab").value = cam.lab || "";
-    document.querySelector(
-      `input[name='edit-ptz-support'][value='${cam.ptzSupport ? "yes" : "no"}']`
-    ).checked = true;
+    const doOpen = () => {
+      const cam = cameras.find((c) => c.id === id);
+      if (!cam) return;
+      document.getElementById("edit-camera-id").value = cam.id;
+      document.getElementById("edit-camera-name").value = cam.name;
+      document.getElementById("edit-ip-address").value = cam.ipAddress;
+      document.getElementById("edit-camera-lab").value = cam.lab || "";
+      document.querySelector(
+        `input[name='edit-ptz-support'][value='${cam.ptzSupport ? "yes" : "no"}']`
+      ).checked = true;
 
-    editCameraModal.classList.add("active");
-    document.body.style.overflow = "hidden";
+      editCameraModal.classList.add("active");
+      document.body.style.overflow = "hidden";
+    };
+
+    // ensure labs are current before filling the select
+    fetchLabs().then(doOpen);
   }
 
   // === EDIT FORM ===

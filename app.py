@@ -11,6 +11,15 @@ from db import get_conn, init_db
 app = Flask(__name__)
 init_db()
 
+@app.after_request
+def add_no_cache_headers(resp):
+    # Avoid caching API GETs in some environments
+    if request.path.startswith("/api/"):
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+    return resp
+
 # ---- Camera inventory ----
 # If all use same credentials, keep here. If different, set per entry.
 USERNAME = "admin"
@@ -171,6 +180,18 @@ def take_snapshot(rtsp, out_dir="./static/capture"):
     cv2.imwrite(path, frame)
     return path
 
+def take_snapshot(rtsp, out_dir="./static/capture", suffix=""):
+    os.makedirs(out_dir, exist_ok=True)
+    cap = cv2.VideoCapture(rtsp, cv2.CAP_FFMPEG)
+    ok, frame = cap.read()
+    cap.release()
+    if not ok or frame is None:
+        return None
+    base = f"snapshot_{timestamp()}{suffix}.jpg"
+    path = os.path.join(out_dir, base)
+    cv2.imwrite(path, frame)
+    return path
+
 
 @app.route("/snapshot")
 def snapshot():
@@ -179,15 +200,26 @@ def snapshot():
     """
     try:
         cam_id = int(request.args.get("cam_id", "0"))
-    except ValueError:
+    except (TypeError, ValueError):
         return "bad cam_id", 400
-    cam = CAMERAS.get(cam_id)
-    if not cam:
+
+    # fetch IP from DB (keep in sync with video_feed/ptz/zoom)
+    con = get_conn()
+    cur = con.cursor()
+    ip = cur.execute(
+        "SELECT Camera_IP FROM Camera_Setting WHERE Camera_ID = ?", (cam_id,)
+    ).fetchval()
+    if not ip:
         return "unknown camera", 404
-    path = take_snapshot(rtsp_url(cam["ip"]))
+
+    rtsp = rtsp_url(ip)
+    path = take_snapshot(rtsp, out_dir="./static/capture", suffix=f"_cam{cam_id}")
     if not path:
         return jsonify({"error": "capture failed"}), 500
-    return send_file(path, mimetype="image/jpeg", as_attachment=True)
+
+    # give a nice filename that includes the camera id
+    filename = f"snapshot_cam{cam_id}_{os.path.basename(path)}"
+    return send_file(path, mimetype="image/jpeg", as_attachment=True, download_name=filename)
 
 
 # DB API's
@@ -199,27 +231,20 @@ def get_labs():
     con = get_conn()
     cur = con.cursor()
     cur.execute(
-        """
-        SELECT Lab_ID, Lab_name, Max_Cameras, Total_Cameras, Online_Cameras, Status, Description
-        FROM Lab_Setting
-    """
+        "SELECT Lab_ID, Lab_name, Total_Cameras, Online_Cameras, Status, Description FROM Lab_Setting"
     )
     rows = cur.fetchall()
     labs = []
     for row in rows:
-        labs.append(
-            {
-                "id": row.Lab_ID,
-                "name": row.Lab_name,
-                "maxCameras": row.Max_Cameras,
-                "totalCameras": row.Total_Cameras,
-                "onlineCameras": row.Online_Cameras,
-                "status": row.Status,
-                "description": row.Description,
-            }
-        )
+        labs.append({
+            "id": row.Lab_ID,
+            "name": row.Lab_name,
+            "totalCameras": row.Total_Cameras,
+            "onlineCameras": row.Online_Cameras,
+            "status": row.Status,
+            "description": row.Description,
+        })
     return jsonify(labs)
-
 
 # GET /api/cameras
 @app.route("/api/cameras", methods=["GET"])
@@ -259,41 +284,31 @@ def get_cameras():
 def add_lab():
     data = request.get_json(force=True)
     name = data.get("name")
-    max_cameras = int(data.get("maxCameras"))
     status = data.get("status")
     description = data.get("description")
 
     con = get_conn()
     cur = con.cursor()
     cur.execute(
-        """
-        INSERT INTO Lab_Setting (Lab_name, Max_Cameras, Total_Cameras, Online_Cameras, Status, Description)
-        VALUES (?, ?, 0, 0, ?, ?)
-    """,
-        (name, max_cameras, status, description),
+        "INSERT INTO Lab_Setting (Lab_name, Total_Cameras, Online_Cameras, Status, Description) VALUES (?, 0, 0, ?, ?)",
+        (name, status, description),
     )
     con.commit()
     return jsonify({"message": "Lab added"}), 201
-
 
 # -------- UPDATE lab ----------
 @app.route("/api/labs/<int:lab_id>", methods=["PUT"])
 def update_lab(lab_id):
     data = request.get_json(force=True)
     name = data.get("name")
-    max_cameras = int(data.get("maxCameras"))
     status = data.get("status")
     description = data.get("description")
 
     con = get_conn()
     cur = con.cursor()
     cur.execute(
-        """
-        UPDATE Lab_Setting
-        SET Lab_name = ?, Max_Cameras = ?, Status = ?, Description = ?
-        WHERE Lab_ID = ?
-    """,
-        (name, max_cameras, status, description, lab_id),
+        "UPDATE Lab_Setting SET Lab_name=?, Status=?, Description=? WHERE Lab_ID=?",
+        (name, status, description, lab_id),
     )
     con.commit()
     return jsonify({"message": "Lab updated"})
@@ -314,35 +329,34 @@ def add_camera():
     data = request.get_json(force=True)
     name = data.get("name")
     ip = data.get("ipAddress")
-    lab_name = data.get("lab")  # name of lab
-    ptz = data.get("ptzSupport")  # boolean
+    lab_name = data.get("lab")          # optional lab name
+    ptz = 1 if data.get("ptzSupport") else 0
 
     con = get_conn()
     cur = con.cursor()
 
+    # Resolve lab_id if a lab name was provided
+    lab_id = None
     if lab_name:
         row = cur.execute(
-            "SELECT Lab_ID, Total_Cameras, Max_Cameras FROM Lab_Setting WHERE Lab_name = ?",
+            "SELECT Lab_ID FROM Lab_Setting WHERE Lab_name = ?",
             (lab_name,),
         ).fetchone()
-
         if not row:
             return jsonify({"error": f"Lab '{lab_name}' not found."}), 400
+        lab_id = row.Lab_ID
 
-        if row.Total_Cameras >= row.Max_Cameras:
-            return jsonify({"error": "Max streams reached for this lab."}), 409
-
-    # insert camera with default values
-    ptz_value = 1 if ptz else 0
-    lab_id = row.Lab_ID if lab_name else None
-
+    # Insert camera (default status offline)
     cur.execute(
-        "INSERT INTO Camera_Setting (Camera_Name, Camera_IP, Status, PTZ_Support, Lab_ID) VALUES (?,?,?,?,?)",
-        (name, ip, "offline", ptz_value, lab_id),
+        """
+        INSERT INTO Camera_Setting (Camera_Name, Camera_IP, Status, PTZ_Support, Lab_ID)
+        VALUES (?, ?, 'offline', ?, ?)
+        """,
+        (name, ip, ptz, lab_id),
     )
-    camera_id = cur.execute("SELECT @@IDENTITY").fetchval()
 
-    if lab_name:
+    # If assigned to a lab, bump that lab's Total_Cameras
+    if lab_id is not None:
         cur.execute(
             "UPDATE Lab_Setting SET Total_Cameras = Total_Cameras + 1 WHERE Lab_ID = ?",
             (lab_id,),

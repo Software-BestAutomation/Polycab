@@ -40,25 +40,7 @@
       <form id="add-lab-form">
         <div class="form-group">
           <label for="lab-name">Lab Name</label>
-          <input
-            type="text"
-            id="lab-name"
-            name="lab-name"
-            required
-            placeholder="Enter lab name"
-          />
-        </div>
-        <div class="form-group">
-          <label for="max-cameras">Max Cameras</label>
-          <input
-            type="number"
-            id="max-cameras"
-            name="max-cameras"
-            min="1"
-            max="20"
-            required
-            placeholder="Enter maximum cameras"
-          />
+          <input type="text" id="lab-name" name="lab-name" required placeholder="Enter lab name" />
         </div>
 
         <div class="form-group">
@@ -72,12 +54,7 @@
 
         <div class="form-group">
           <label for="lab-description">Description</label>
-          <textarea
-            id="lab-description"
-            name="lab-description"
-            rows="3"
-            placeholder="Enter lab description"
-          ></textarea>
+          <textarea id="lab-description" name="lab-description" rows="3" placeholder="Enter lab description"></textarea>
         </div>
         <div class="form-actions">
           <button type="button" class="btn-secondary" id="cancel-add-lab">
@@ -105,27 +82,8 @@
         <input type="hidden" id="edit-lab-id" />
         <div class="form-group">
           <label for="edit-lab-name">Lab Name</label>
-          <input
-            type="text"
-            id="edit-lab-name"
-            name="edit-lab-name"
-            required
-            placeholder="Enter lab name"
-          />
+          <input type="text" id="edit-lab-name" name="edit-lab-name" required placeholder="Enter lab name" />
         </div>
-        <div class="form-group">
-          <label for="edit-max-cameras">Max Cameras</label>
-          <input
-            type="number"
-            id="edit-max-cameras"
-            name="edit-max-cameras"
-            min="1"
-            max="20"
-            required
-            placeholder="Enter maximum cameras"
-          />
-        </div>
-
         <div class="form-group">
           <label for="edit-lab-status">Status</label>
           <select id="edit-lab-status" name="edit-lab-status" required>
@@ -137,12 +95,8 @@
 
         <div class="form-group">
           <label for="edit-lab-description">Description</label>
-          <textarea
-            id="edit-lab-description"
-            name="edit-lab-description"
-            rows="3"
-            placeholder="Enter lab description"
-          ></textarea>
+          <textarea id="edit-lab-description" name="edit-lab-description" rows="3"
+            placeholder="Enter lab description"></textarea>
         </div>
         <div class="form-actions">
           <button type="button" class="btn-secondary" id="cancel-edit-lab">

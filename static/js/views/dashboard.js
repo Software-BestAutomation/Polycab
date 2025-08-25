@@ -22,6 +22,7 @@ export function init() {
       if (activeStreamId === null) activeStreamId = id;
       renderStreams();
       updateCameraName();
+      updateControlPanelVisibility();
     }
   });
 
@@ -32,6 +33,7 @@ export function init() {
 
   renderStreams();
   updateCameraName();
+  updateControlPanelVisibility();
 }
 
 // Helpers
@@ -44,20 +46,22 @@ function renderStreams() {
   dash.classList.remove("single-stream");
 
   if (streams.length === 0) {
+    activeStreamId = null;
     const hint = document.createElement("p");
     hint.textContent = "Drag camera icons here";
     hint.style.cssText = "grid-column:1/-1;text-align:center;color:#8a8b95;";
     dash.appendChild(hint);
+    updateControlPanelVisibility();
     return;
   }
   if (streams.length === 1) {
-  dash.classList.add("single-stream");
-  dash.style.gridTemplateColumns = "1fr";  // <-- reset
-} else {
-  dash.classList.remove("single-stream");
-  const cols = Math.ceil(Math.sqrt(streams.length));
-  dash.style.gridTemplateColumns = `repeat(${cols},1fr)`;
-}
+    dash.classList.add("single-stream");
+    dash.style.gridTemplateColumns = "1fr";  // <-- reset
+  } else {
+    dash.classList.remove("single-stream");
+    const cols = Math.ceil(Math.sqrt(streams.length));
+    dash.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+  }
 
   streams.forEach((id) => {
     const cell = document.createElement("div");
@@ -82,6 +86,7 @@ function renderStreams() {
       }
       renderStreams();
       updateCameraName();
+      updateControlPanelVisibility();
     };
 
     const btnWrap = document.createElement("div");
@@ -109,6 +114,15 @@ function renderStreams() {
 
     dash.appendChild(cell);
   });
+}
+
+function updateControlPanelVisibility() {
+  const panel = document.querySelector(".control-panel");
+  if (!panel) return;
+
+  const hasStreams = streams.length > 0;
+  // Only show if: on dashboard (handled by main.js via .panel-hide-view) AND at least one stream
+  panel.classList.toggle("panel-visible", hasStreams);
 }
 
 function updateCameraName() {

@@ -71,26 +71,23 @@ document.addEventListener("click", (e) => {
 });
 
 // ----- CAMERA LIST (sidebar) -----
-// returns css class for the dot
 function statusClass(s) {
   if (!s) return "status-unknown";
   return s.toLowerCase() === "online"
     ? "status-online"
     : s.toLowerCase() === "offline"
-    ? "status-offline"
-    : "status-unknown";
+      ? "status-offline"
+      : "status-unknown";
 }
 
-// call this on page load + whenever cameras change
 async function buildCameraList() {
   const list = document.getElementById("camera-list");
   if (!list) return;
 
-  // 1. fetch cameras from server
   const resp = await fetch("/api/cameras");
   const cameras = await resp.json();
 
-  // 2. group by lab
+  // group by lab
   const groups = {};
   cameras.forEach((cam) => {
     const lab = cam.lab || "Unassigned";
@@ -98,7 +95,6 @@ async function buildCameraList() {
     groups[lab].push(cam);
   });
 
-  // 3. render
   list.innerHTML = "";
   Object.entries(groups).forEach(([labName, cams]) => {
     const group = document.createElement("div");
@@ -119,8 +115,11 @@ async function buildCameraList() {
     cams.forEach((c) => {
       const row = document.createElement("div");
       row.className = "camera-item camera-row";
-      row.draggable = true;
       row.dataset.id = c.id;
+
+      const isOnline = c.status && c.status.toLowerCase() === "online";
+      row.draggable = isOnline; // only draggable if online
+
       row.innerHTML = `
         <span class="material-symbols-outlined">videocam</span>
         <div class="camera-left">
@@ -132,9 +131,19 @@ async function buildCameraList() {
           <span class="status-text">${c.status || "unknown"}</span>
         </div>
       `;
-      row.addEventListener("dragstart", (e) =>
-        e.dataTransfer.setData("id", row.dataset.id)
-      );
+
+      if (isOnline) {
+        // allow drag
+        row.addEventListener("dragstart", (e) =>
+          e.dataTransfer.setData("id", row.dataset.id)
+        );
+      } else {
+        // show alert if user tries to drag offline camera
+        row.addEventListener("mousedown", () => {
+          alert(`Camera "${c.name}" is offline and cannot be dragged.`);
+        });
+      }
+
       content.appendChild(row);
     });
 
@@ -142,25 +151,8 @@ async function buildCameraList() {
     group.appendChild(content);
     list.appendChild(group);
   });
-
-  // enable sidebar filtering
-  const searchInput = document.getElementById("camera-search");
-  if (searchInput) {
-    searchInput.addEventListener("input", () => {
-      const term = searchInput.value.toLowerCase();
-      document.querySelectorAll(".camera-group").forEach((group) => {
-        let hasMatches = false;
-        group.querySelectorAll(".camera-item").forEach((item) => {
-          const ok = item.textContent.toLowerCase().includes(term);
-          item.style.display = ok ? "" : "none";
-          if (ok) hasMatches = true;
-        });
-        group.style.display = hasMatches ? "" : "none";
-        if (hasMatches) group.classList.remove("collapsed");
-      });
-    });
-  }
 }
+
 
 // ---------- Responsive / Device Guard ----------
 function checkDeviceWidth() {
@@ -181,25 +173,18 @@ function showView(viewId) {
     sec.classList.toggle("active", sec.id === viewId);
   });
 
-  document
-    .querySelectorAll("#sidebar li")
-    .forEach((li) => li.classList.remove("active"));
+  document.querySelectorAll("#sidebar li").forEach((li) => li.classList.remove("active"));
 
   let activeLi =
-    document
-      .querySelector(`#sidebar a[data-view="${viewId}"]`)
-      ?.closest("li") ||
-    document.querySelector(`#sidebar li.nav-item[data-view="${viewId}"]`);
+    document.querySelector(`#sidebar a[data-view="${viewId}"]`)?.closest("li") ||
+    document.querySelector(`#sidebar li.nav-item[data-view="${viewId}"]`) ||
+    document.querySelector(`#sidebar a[data-view="dashboard"]`)?.closest("li");
 
-  if (!activeLi) {
-    activeLi = document
-      .querySelector(`#sidebar a[data-view="dashboard"]`)
-      ?.closest("li");
-  }
   activeLi && activeLi.classList.add("active");
 
+  // ⬇️ NEW: gate panel by view only (visibility by streams is handled in dashboard.js)
   const panel = document.querySelector(".control-panel");
-  if (panel) panel.classList.toggle("hidden", viewId !== "dashboard");
+  if (panel) panel.classList.toggle("panel-hide-view", viewId !== "dashboard");
 
   closeAllSubMenus();
   ensurePartialLoaded(viewId);
@@ -212,6 +197,7 @@ function showView(viewId) {
     });
   }
 }
+
 
 document.getElementById("sidebar").addEventListener("click", (e) => {
   const link = e.target.closest("a[data-view]");
@@ -284,7 +270,7 @@ async function ensureModuleLoaded(viewId) {
     const mod = await import(`/static/js/views/${viewId}.js`);
     if (mod?.init) queueMicrotask(() => mod.init());
     _loadedModules.add(viewId);
-  } catch (_) {}
+  } catch (_) { }
 }
 
 // Ping cameras every ~20 seconds

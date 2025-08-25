@@ -30,7 +30,7 @@ function renderLabsTable() {
 }
 
 async function fetchLabs() {
-  const response = await fetch("/api/labs");
+  const response = await fetch("/api/labs", { cache: "no-store" });
   labs = await response.json();
   renderLabsTable();
 }
@@ -42,6 +42,7 @@ async function addLabToServer(payload) {
     body: JSON.stringify(payload),
   });
   await fetchLabs();
+  window.dispatchEvent(new CustomEvent("labs:changed")); // <--- add
 }
 
 async function updateLabOnServer(id, payload) {
@@ -51,11 +52,13 @@ async function updateLabOnServer(id, payload) {
     body: JSON.stringify(payload),
   });
   await fetchLabs();
+  window.dispatchEvent(new CustomEvent("labs:changed")); // <--- add
 }
 
 async function deleteLabOnServer(id) {
   await fetch(`/api/labs/${id}`, { method: "DELETE" });
   await fetchLabs();
+  window.dispatchEvent(new CustomEvent("labs:changed")); // <--- add
 }
 
 export function init() {
@@ -105,7 +108,6 @@ export function init() {
 
       const payload = {
         name: document.getElementById("lab-name").value,
-        maxCameras: parseInt(document.getElementById("max-cameras").value),
         status: document.getElementById("lab-status").value,
         description: document.getElementById("lab-description").value,
       };
@@ -121,7 +123,6 @@ export function init() {
 
     document.getElementById("edit-lab-id").value = lab.id;
     document.getElementById("edit-lab-name").value = lab.name;
-    document.getElementById("edit-max-cameras").value = lab.maxCameras;
     document.getElementById("edit-lab-status").value = lab.status;
     document.getElementById("edit-lab-description").value = lab.description;
 
@@ -137,7 +138,6 @@ export function init() {
 
       const payload = {
         name: document.getElementById("edit-lab-name").value,
-        maxCameras: parseInt(document.getElementById("edit-max-cameras").value),
         status: document.getElementById("edit-lab-status").value,
         description: document.getElementById("edit-lab-description").value,
       };
