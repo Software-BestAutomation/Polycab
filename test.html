@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polycab Camera Requester</title>
+    <style>
+        :root {
+            --primary-color: #3a86ff;
+            --secondary-color: #8338ec;
+            --success-color: #38b000;
+            --warning-color: #ffbe0b;
+            --danger-color: #ff006e;
+            --dark-bg: #121212;
+            --dark-card: #1e1e1e;
+            --dark-border: #333;
+            --text-primary: #f8f9fa;
+            --text-secondary: #adb5bd;
+            --radius: 8px;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background-color: var(--dark-card);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--dark-border);
+        }
+
+        .app-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .client-info {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--success-color);
+        }
+
+        .status-indicator.offline {
+            background-color: var(--danger-color);
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex: 1;
+        }
+
+        /* Tabs Navigation */
+        .tabs {
+            width: 200px;
+            background-color: var(--dark-card);
+            border-right: 1px solid var(--dark-border);
+            padding: 1rem 0;
+        }
+
+        .tab {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            transition: var(--transition);
+            border-left: 4px solid transparent;
+        }
+
+        .tab:hover {
+            background-color: rgba(58, 134, 255, 0.1);
+        }
+
+        .tab.active {
+            border-left-color: var(--primary-color);
+            background-color: rgba(58, 134, 255, 0.2);
+            font-weight: bold;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        select,
+        input,
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--dark-card);
+            border: 1px solid var(--dark-border);
+            border-radius: var(--radius);
+            color: var(--text-primary);
+            transition: var(--transition);
+        }
+
+        select:focus,
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(58, 134, 255, 0.2);
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #2563eb;
+        }
+
+        button.secondary {
+            background-color: var(--dark-card);
+            border: 1px solid var(--dark-border);
+        }
+
+        button.secondary:hover {
+            background-color: #2d2d2d;
+        }
+
+        button.danger {
+            background-color: var(--danger-color);
+        }
+
+        button.danger:hover {
+            background-color: #d90057;
+        }
+
+        /* Status Chips */
+        .status-chip {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .status-pending {
+            background-color: rgba(255, 190, 11, 0.2);
+            color: var(--warning-color);
+        }
+
+        .status-approved {
+            background-color: rgba(56, 176, 0, 0.2);
+            color: var(--success-color);
+        }
+
+        .status-rejected {
+            background-color: rgba(255, 0, 110, 0.2);
+            color: var(--danger-color);
+        }
+
+        /* Dashboard Layout */
+        .dashboard {
+            display: flex;
+            gap: 1.5rem;
+            height: calc(100vh - 200px);
+        }
+
+        .camera-library {
+            width: 300px;
+            background-color: var(--dark-card);
+            border-radius: var(--radius);
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .camera-grid {
+            flex: 1;
+            background-color: var(--dark-card);
+            border-radius: var(--radius);
+            padding: 1rem;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .grid-controls {
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Camera Cards */
+        .camera-card {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: var(--radius);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            cursor: grab;
+            transition: var(--transition);
+            border: 1px solid var(--dark-border);
+        }
+
+        .camera-card:hover {
+            border-color: var(--primary-color);
+        }
+
+        .camera-name {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .camera-details {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .ptz-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            background-color: rgba(56, 176, 0, 0.2);
+            color: var(--success-color);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        /* Video Tiles */
+        .video-tile {
+            background-color: #000;
+            border-radius: var(--radius);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--dark-border);
+        }
+
+        .video-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 0.5rem;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7) 0%, transparent 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .video-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #0a0a0a;
+            color: var(--text-secondary);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1.25rem;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ptz-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 0.5rem;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, transparent 100%);
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            z-index: 10;
+        }
+
+        .ptz-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .ptz-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .session-controls {
+            position: absolute;
+            bottom: 40px;
+            right: 10px;
+            display: flex;
+            gap: 0.5rem;
+            z-index: 10;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th,
+        td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--dark-border);
+        }
+
+        th {
+            color: var(--text-secondary);
+            font-weight: normal;
+        }
+
+        tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Mobile Warning */
+        .mobile-warning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--dark-bg);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .mobile-warning {
+                display: flex;
+            }
+
+            .main-content,
+            .top-bar {
+                display: none;
+            }
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none;
+        }
+
+        .mt-2 {
+            margin-top: 1rem;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Mobile Warning -->
+    <div class="mobile-warning">
+        <div>
+            <h2>Please Use Desktop for Best Experience</h2>
+            <p>The Polycab Camera Requester is optimized for desktop use. Please open this application on a desktop
+                computer.</p>
+        </div>
+    </div>
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="app-name">Polycab Camera Requester</div>
+        <div class="client-info">
+            <div class="client-id">Client ID: PC-2023-0871</div>
+            <div class="connection-status">
+                <div class="status-indicator" id="connectionStatus"></div>
+                <span>Server Connected</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Tabs Navigation -->
+        <div class="tabs">
+            <div class="tab active" data-tab="request-lab">Request Lab</div>
+            <div class="tab" data-tab="request-cameras">Request Cameras</div>
+            <div class="tab" data-tab="my-dashboard">My Dashboard</div>
+            <div class="tab" data-tab="my-sessions">My Sessions</div>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Request Lab Tab -->
+            <div class="tab-panel active" id="request-lab">
+                <h2>Request Lab Access</h2>
+                <p>Request access to an entire lab for a specified duration.</p>
+
+                <div class="form-group">
+                    <label for="lab-select">Select Lab</label>
+                    <select id="lab-select">
+                        <option value="">-- Select a Lab --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="duration">Duration (minutes)</label>
+                    <input type="number" id="duration" min="1" value="30">
+                </div>
+
+                <div class="form-group">
+                    <label for="notes">Notes (optional)</label>
+                    <textarea id="notes" rows="3"></textarea>
+                </div>
+
+                <button id="submit-lab-request">Submit Request</button>
+
+                <div id="lab-request-status" class="mt-2 hidden">
+                    <h3>Request Status: <span class="status-chip" id="lab-status-text">Pending</span></h3>
+                    <div id="lab-request-details"></div>
+                </div>
+            </div>
+
+            <!-- Request Cameras Tab -->
+            <div class="tab-panel" id="request-cameras">
+                <h2>Request Specific Cameras</h2>
+                <p>Request a specific number of cameras from a chosen lab.</p>
+
+                <div class="form-group">
+                    <label for="camera-lab-select">Select Lab</label>
+                    <select id="camera-lab-select">
+                        <option value="">-- Select a Lab --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="camera-count">Number of Cameras</label>
+                    <input type="number" id="camera-count" min="1" value="1">
+                </div>
+
+                <div class="form-group">
+                    <label for="camera-notes">Notes (optional)</label>
+                    <textarea id="camera-notes" rows="3"></textarea>
+                </div>
+
+                <button id="submit-camera-request">Submit Request</button>
+
+                <div id="camera-request-status" class="mt-2 hidden">
+                    <h3>Request Status: <span class="status-chip" id="camera-status-text">Pending</span></h3>
+                    <div id="assigned-cameras" class="mt-2"></div>
+                </div>
+            </div>
+
+            <!-- My Dashboard Tab -->
+            <div class="tab-panel" id="my-dashboard">
+                <h2>My Camera Dashboard</h2>
+                <p>Drag cameras from your library to the grid to view live feeds.</p>
+
+                <div class="dashboard">
+                    <div class="camera-library">
+                        <h3>Assigned Camera Library</h3>
+                        <div id="camera-cards-container">
+                            <!-- Camera cards will be inserted here -->
+                        </div>
+                    </div>
+
+                    <div class="video-grid-container">
+                        <div class="grid-controls">
+                            <span>Grid Layout:</span>
+                            <button data-layout="1x1">1×1</button>
+                            <button data-layout="2x2" class="active">2×2</button>
+                            <button data-layout="3x3">3×3</button>
+                            <button data-layout="4x4">4×4</button>
+                        </div>
+
+                        <div class="camera-grid" id="camera-grid">
+                            <!-- Video tiles will be inserted here -->
+                            <div class="video-tile empty">
+                                <div class="video-placeholder">Drop camera here</div>
+                            </div>
+                            <div class="video-tile empty">
+                                <div class="video-placeholder">Drop camera here</div>
+                            </div>
+                            <div class="video-tile empty">
+                                <div class="video-placeholder">Drop camera here</div>
+                            </div>
+                            <div class="video-tile empty">
+                                <div class="video-placeholder">Drop camera here</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- My Sessions Tab -->
+            <div class="tab-panel" id="my-sessions">
+                <h2>My Active Sessions</h2>
+                <table id="sessions-table">
+                    <thead>
+                        <tr>
+                            <th>Camera ID</th>
+                            <th>Lab</th>
+                            <th>Start Time</th>
+                            <th>Remaining Time</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Sessions will be inserted here -->
+                    </tbody>
+                </table>
+
+                <h2 class="mt-2">Expired Sessions</h2>
+                <table id="expired-sessions-table">
+                    <thead>
+                        <tr>
+                            <th>Camera ID</th>
+                            <th>Lab</th>
+                            <th>End Time</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Expired sessions will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data storage and initialization
+        const state = {
+            labs: [
+                { id: 'lab-1', name: 'Robotics Lab A', cameras: 8, available: 5 },
+                { id: 'lab-2', name: 'Computer Vision Lab', cameras: 12, available: 3 },
+                { id: 'lab-3', name: 'VR Development Lab', cameras: 6, available: 4 },
+                { id: 'lab-4', name: 'Security Research Lab', cameras: 10, available: 2 }
+            ],
+            assignedCameras: [],
+            activeSessions: [],
+            expiredSessions: [],
+            requests: [],
+            gridLayout: '2x2',
+            allowDuplicates: false,
+            connectionStatus: true
+        };
+
+        // DOM Elements
+        const tabButtons = document.querySelectorAll('.tab');
+        const tabPanels = document.querySelectorAll('.tab-panel');
+        const labSelect = document.getElementById('lab-select');
+        const cameraLabSelect = document.getElementById('camera-lab-select');
+        const connectionStatusIndicator = document.getElementById('connectionStatus');
+        const cameraGrid = document.getElementById('camera-grid');
+        const cameraCardsContainer = document.getElementById('camera-cards-container');
+        const sessionsTable = document.getElementById('sessions-table');
+        const expiredSessionsTable = document.getElementById('expired-sessions-table');
+
+        // Initialize the application
+        function init() {
+            // Set up tab navigation
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabId = button.getAttribute('data-tab');
+                    switchTab(tabId);
+                });
+            });
+
+            // Populate lab dropdowns
+            populateLabDropdowns();
+
+            // Set up form submissions
+            document.getElementById('submit-lab-request').addEventListener('click', submitLabRequest);
+            document.getElementById('submit-camera-request').addEventListener('click', submitCameraRequest);
+
+            // Set up grid layout buttons
+            document.querySelectorAll('.grid-controls button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const layout = button.getAttribute('data-layout');
+                    changeGridLayout(layout);
+
+                    // Update active button state
+                    document.querySelectorAll('.grid-controls button').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    button.classList.add('active');
+                });
+            });
+
+            // Initialize drag and drop
+            initDragAndDrop();
+
+            // Load saved data from localStorage
+            loadFromLocalStorage();
+
+            // Update connection status
+            updateConnectionStatus();
+
+            // Set up periodic status updates
+            setInterval(updateTimers, 1000);
+
+            // Simulate occasional connection changes
+            setInterval(() => {
+                state.connectionStatus = Math.random() > 0.1;
+                updateConnectionStatus();
+            }, 10000);
+        }
+
+        // Tab switching function
+        function switchTab(tabId) {
+            // Update tab buttons
+            tabButtons.forEach(button => {
+                if (button.getAttribute('data-tab') === tabId) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+
+            // Update tab panels
+            tabPanels.forEach(panel => {
+                if (panel.id === tabId) {
+                    panel.classList.add('active');
+                } else {
+                    panel.classList.remove('active');
+                }
+            });
+
+            // Refresh data if needed
+            if (tabId === 'my-dashboard') {
+                refreshCameraLibrary();
+            } else if (tabId === 'my-sessions') {
+                refreshSessionsTable();
+            }
+        }
+
+        // Populate lab dropdowns
+        function populateLabDropdowns() {
+            // Clear existing options except the first one
+            while (labSelect.options.length > 1) {
+                labSelect.remove(1);
+            }
+            while (cameraLabSelect.options.length > 1) {
+                cameraLabSelect.remove(1);
+            }
+
+            // Add labs to dropdowns
+            state.labs.forEach(lab => {
+                const option1 = document.createElement('option');
+                option1.value = lab.id;
+                option1.textContent = `${lab.name} (${lab.available} cameras available)`;
+                labSelect.appendChild(option1);
+
+                const option2 = document.createElement('option');
+                option2.value = lab.id;
+                option2.textContent = `${lab.name} (${lab.available} cameras available)`;
+                cameraLabSelect.appendChild(option2);
+            });
+        }
+
+        // Submit lab request
+        function submitLabRequest() {
+            const labId = labSelect.value;
+            const duration = parseInt(document.getElementById('duration').value);
+            const notes = document.getElementById('notes').value;
+
+            if (!labId || !duration) {
+                alert('Please select a lab and specify duration');
+                return;
+            }
+
+            const lab = state.labs.find(l => l.id === labId);
+
+            // Create request object
+            const request = {
+                id: 'req-' + Date.now(),
+                type: 'lab',
+                labId: labId,
+                labName: lab.name,
+                duration: duration,
+                notes: notes,
+                status: 'pending',
+                timestamp: new Date()
+            };
+
+            // Add to requests
+            state.requests.push(request);
+
+            // Show status
+            const statusDiv = document.getElementById('lab-request-status');
+            const statusText = document.getElementById('lab-status-text');
+            const detailsDiv = document.getElementById('lab-request-details');
+
+            statusDiv.classList.remove('hidden');
+            statusText.textContent = 'Pending';
+            statusText.className = 'status-chip status-pending';
+            detailsDiv.innerHTML = `
+                <p>Lab: ${lab.name}</p>
+                <p>Duration: ${duration} minutes</p>
+                <p>Requested at: ${request.timestamp.toLocaleTimeString()}</p>
+            `;
+
+            // Simulate approval after 2 seconds
+            setTimeout(() => {
+                approveLabRequest(request.id);
+            }, 2000);
+
+            // Save to localStorage
+            saveToLocalStorage();
+        }
+
+        // Approve lab request
+        function approveLabRequest(requestId) {
+            const request = state.requests.find(r => r.id === requestId);
+            if (!request) return;
+
+            request.status = 'approved';
+            request.approvedAt = new Date();
+
+            // Update UI
+            const statusText = document.getElementById('lab-status-text');
+            statusText.textContent = 'Approved';
+            statusText.className = 'status-chip status-approved';
+
+            // Add cameras to assigned library
+            const lab = state.labs.find(l => l.id === request.labId);
+            if (lab) {
+                for (let i = 1; i <= lab.cameras; i++) {
+                    const camera = {
+                        id: `cam-${request.labId}-${i}`,
+                        name: `Camera ${i}`,
+                        labId: request.labId,
+                        labName: lab.name,
+                        status: Math.random() > 0.2 ? 'online' : 'offline',
+                        ptz: Math.random() > 0.4,
+                        assignedAt: new Date()
+                    };
+
+                    // Check if camera already exists
+                    if (!state.assignedCameras.find(c => c.id === camera.id)) {
+                        state.assignedCameras.push(camera);
+                    }
+                }
+
+                // Refresh camera library if we're on the dashboard
+                if (document.getElementById('my-dashboard').classList.contains('active')) {
+                    refreshCameraLibrary();
+                }
+            }
+
+            // Save to localStorage
+            saveToLocalStorage();
+        }
+
+        // Submit camera request
+        function submitCameraRequest() {
+            const labId = cameraLabSelect.value;
+            const count = parseInt(document.getElementById('camera-count').value);
+            const notes = document.getElementById('camera-notes').value;
+
+            if (!labId || !count) {
+                alert('Please select a lab and specify camera count');
+                return;
+            }
+
+            const lab = state.labs.find(l => l.id === labId);
+
+            if (count > lab.available) {
+                alert(`Only ${lab.available} cameras available in ${lab.name}`);
+                return;
+            }
+
+            // Create request object
+            const request = {
+                id: 'req-' + Date.now(),
+                type: 'cameras',
+                labId: labId,
+                labName: lab.name,
+                cameraCount: count,
+                notes: notes,
+                status: 'pending',
+                timestamp: new Date()
+            };
+
+            // Add to requests
+            state.requests.push(request);
+
+            // Show status
+            const statusDiv = document.getElementById('camera-request-status');
+            const statusText = document.getElementById('camera-status-text');
+            const camerasDiv = document.getElementById('assigned-cameras');
+
+            statusDiv.classList.remove('hidden');
+            statusText.textContent = 'Pending';
+            statusText.className = 'status-chip status-pending';
+            camerasDiv.innerHTML = '<p>Waiting for approval...</p>';
+
+            // Simulate approval after 2 seconds
+            setTimeout(() => {
+                approveCameraRequest(request.id);
+            }, 2000);
+
+            // Save to localStorage
+            saveToLocalStorage();
+        }
+
+        // Approve camera request
+        function approveCameraRequest(requestId) {
+            const request = state.requests.find(r => r.id === requestId);
+            if (!request) return;
+
+            request.status = 'approved';
+            request.approvedAt = new Date();
+
+            // Update UI
+            const statusText = document.getElementById('camera-status-text');
+            statusText.textContent = 'Approved';
+            statusText.className = 'status-chip status-approved';
+
+            // Add cameras to assigned library
+            const lab = state.labs.find(l => l.id === request.labId);
+            const camerasDiv = document.getElementById('assigned-cameras');
+
+            camerasDiv.innerHTML = '<h4>Assigned Cameras:</h4><ul>';
+
+            for (let i = 1; i <= request.cameraCount; i++) {
+                const cameraId = `cam-${request.labId}-${i}`;
+
+                // Check if camera already exists
+                if (!state.assignedCameras.find(c => c.id === cameraId)) {
+                    const camera = {
+                        id: cameraId,
+                        name: `Camera ${i}`,
+                        labId: request.labId,
+                        labName: lab.name,
+                        status: Math.random() > 0.2 ? 'online' : 'offline',
+                        ptz: Math.random() > 0.4,
+                        assignedAt: new Date()
+                    };
+
+                    state.assignedCameras.push(camera);
+
+                    // Add to UI list
+                    camerasDiv.innerHTML += `
+                        <li>${camera.name} (${lab.name}) - 
+                        <span class="status-chip ${camera.status === 'online' ? 'status-approved' : 'status-rejected'}">${camera.status}</span>
+                        ${camera.ptz ? '<span class="ptz-badge">PTZ</span>' : ''}
+                        </li>
+                    `;
+                }
+            }
+
+            camerasDiv.innerHTML += '</ul>';
+
+            // Refresh camera library if we're on the dashboard
+            if (document.getElementById('my-dashboard').classList.contains('active')) {
+                refreshCameraLibrary();
+            }
+
+            // Save to localStorage
+            saveToLocalStorage();
+        }
+
+        // Refresh camera library
+        function refreshCameraLibrary() {
+            cameraCardsContainer.innerHTML = '';
+
+            if (state.assignedCameras.length === 0) {
+                cameraCardsContainer.innerHTML = '<p class="text-center">No cameras assigned yet</p>';
+                return;
+            }
+
+            state.assignedCameras.forEach(camera => {
+                const card = document.createElement('div');
+                card.className = 'camera-card';
+                card.setAttribute('draggable', 'true');
+                card.setAttribute('data-camera-id', camera.id);
+
+                let statusClass = 'status-pending';
+                if (camera.status === 'online') statusClass = 'status-approved';
+                if (camera.status === 'offline') statusClass = 'status-rejected';
+
+                card.innerHTML = `
+                    <div class="camera-name">${camera.name}</div>
+                    <div class="camera-details">${camera.labName}</div>
+                    <div>
+                        <span class="status-chip ${statusClass}">${camera.status}</span>
+                        ${camera.ptz ? '<span class="ptz-badge">PTZ</span>' : ''}
+                    </div>
+                `;
+
+                cameraCardsContainer.appendChild(card);
+            });
+
+            // Re-initialize drag and drop for the new cards
+            initDragAndDrop();
+        }
+
+        // Initialize drag and drop
+        function initDragAndDrop() {
+            const draggables = document.querySelectorAll('.camera-card');
+            const dropTargets = document.querySelectorAll('.video-tile');
+
+            draggables.forEach(draggable => {
+                draggable.addEventListener('dragstart', () => {
+                    draggable.classList.add('dragging');
+                });
+
+                draggable.addEventListener('dragend', () => {
+                    draggable.classList.remove('dragging');
+                });
+            });
+
+            dropTargets.forEach(target => {
+                target.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    target.classList.add('drag-over');
+                });
+
+                target.addEventListener('dragleave', () => {
+                    target.classList.remove('drag-over');
+                });
+
+                target.addEventListener('drop', e => {
+                    e.preventDefault();
+                    target.classList.remove('drag-over');
+
+                    const draggable = document.querySelector('.dragging');
+                    if (!draggable) return;
+
+                    const cameraId = draggable.getAttribute('data-camera-id');
+                    const camera = state.assignedCameras.find(c => c.id === cameraId);
+
+                    if (!camera) return;
+
+                    // Check if camera is already in grid and duplicates not allowed
+                    if (!state.allowDuplicates) {
+                        const existingTiles = document.querySelectorAll('.video-tile:not(.empty)');
+                        for (let tile of existingTiles) {
+                            const tileCameraId = tile.getAttribute('data-camera-id');
+                            if (tileCameraId === cameraId) {
+                                alert('This camera is already in the grid. Enable "Allow duplicates" to add it again.');
+                                return;
+                            }
+                        }
+                    }
+
+                    // Create video tile
+                    createVideoTile(target, camera);
+
+                    // Start session for this camera
+                    startCameraSession(camera);
+
+                    // Refresh sessions table
+                    refreshSessionsTable();
+                });
+            });
+        }
+
+        // Create video tile
+        function createVideoTile(tileElement, camera) {
+            tileElement.classList.remove('empty');
+            tileElement.setAttribute('data-camera-id', camera.id);
+
+            tileElement.innerHTML = `
+                <div class="video-header">
+                    <div class="camera-name">${camera.name} (${camera.labName})</div>
+                    <button class="close-btn">&times;</button>
+                </div>
+                <div class="video-placeholder">Live Feed: ${camera.name}</div>
+                ${camera.ptz ? `
+                <div class="ptz-controls">
+                    <button class="ptz-btn">↑</button>
+                    <button class="ptz-btn">↓</button>
+                    <button class="ptz-btn">←</button>
+                    <button class="ptz-btn">→</button>
+                    <button class="ptz-btn">+</button>
+                    <button class="ptz-btn">-</button>
+                </div>
+                ` : ''}
+                <div class="session-controls">
+                    <button class="ptz-btn">⤢</button>
+                    <button class="ptz-btn end-session">End</button>
+                </div>
+            `;
+
+            // Add event listener for close button
+            tileElement.querySelector('.close-btn').addEventListener('click', () => {
+                endCameraSession(camera.id);
+                resetTile(tileElement);
+            });
+
+            // Add event listener for end session button
+            tileElement.querySelector('.end-session').addEventListener('click', () => {
+                endCameraSession(camera.id);
+                resetTile(tileElement);
+            });
+        }
+
+        // Reset tile to empty state
+        function resetTile(tileElement) {
+            tileElement.classList.add('empty');
+            tileElement.removeAttribute('data-camera-id');
+            tileElement.innerHTML = '<div class="video-placeholder">Drop camera here</div>';
+        }
+
+        // Start camera session
+        function startCameraSession(camera) {
+            // Check if session already exists
+            const existingSession = state.activeSessions.find(s => s.cameraId === camera.id);
+            if (existingSession) {
+                // Refresh the session
+                existingSession.startTime = new Date();
+                existingSession.endTime = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
+            } else {
+                // Create new session
+                const session = {
+                    cameraId: camera.id,
+                    cameraName: camera.name,
+                    labId: camera.labId,
+                    labName: camera.labName,
+                    startTime: new Date(),
+                    endTime: new Date(Date.now() + 30 * 60 * 1000) // 30 minutes from now
+                };
+
+                state.activeSessions.push(session);
+            }
+
+            // Save to localStorage
+            saveToLocalStorage();
+        }
+
+        // End camera session
+        function endCameraSession(cameraId) {
+            const sessionIndex = state.activeSessions.findIndex(s => s.cameraId === cameraId);
+
+            if (sessionIndex !== -1) {
+                const session = state.activeSessions[sessionIndex];
+                session.endedAt = new Date();
+
+                // Move to expired sessions
+                state.expiredSessions.push(session);
+                state.activeSessions.splice(sessionIndex, 1);
+
+                // Save to localStorage
+                saveToLocalStorage();
+
+                // Refresh sessions table
+                refreshSessionsTable();
+            }
+        }
+
+        // Refresh sessions table
+        function refreshSessionsTable() {
+            const tbody = sessionsTable.querySelector('tbody');
+            const expiredTbody = expiredSessionsTable.querySelector('tbody');
+
+            tbody.innerHTML = '';
+            expiredTbody.innerHTML = '';
+
+            // Active sessions
+            state.activeSessions.forEach(session => {
+                const remaining = Math.max(0, Math.round((session.endTime - Date.now()) / 1000 / 60));
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${session.cameraName}</td>
+                    <td>${session.labName}</td>
+                    <td>${session.startTime.toLocaleTimeString()}</td>
+                    <td>${remaining} minutes</td>
+                    <td>
+                        <button class="end-session-btn" data-camera-id="${session.cameraId}">End Session</button>
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+            });
+
+            // Expired sessions
+            state.expiredSessions.forEach(session => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${session.cameraName}</td>
+                    <td>${session.labName}</td>
+                    <td>${session.endedAt.toLocaleTimeString()}</td>
+                    <td>
+                        <button class="request-again-btn" data-camera-id="${session.cameraId}">Re-request</button>
+                    </td>
+                `;
+
+                expiredTbody.appendChild(row);
+            });
+
+            // Add event listeners to buttons
+            document.querySelectorAll('.end-session-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const cameraId = btn.getAttribute('data-camera-id');
+                    endCameraSession(cameraId);
+
+                    // Also remove from grid if it's there
+                    const tile = document.querySelector(`.video-tile[data-camera-id="${cameraId}"]`);
+                    if (tile) {
+                        resetTile(tile);
+                    }
+                });
+            });
+
+            document.querySelectorAll('.request-again-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const cameraId = btn.getAttribute('data-camera-id');
+                    alert(`Would request camera ${cameraId} again`);
+                    // In a real app, this would trigger a new request
+                });
+            });
+
+            // Add "End All Sessions" button if there are active sessions
+            if (state.activeSessions.length > 0) {
+                if (!document.getElementById('end-all-sessions')) {
+                    const endAllBtn = document.createElement('button');
+                    endAllBtn.id = 'end-all-sessions';
+                    endAllBtn.className = 'danger mt-2';
+                    endAllBtn.textContent = 'End All Sessions';
+                    endAllBtn.addEventListener('click', endAllSessions);
+
+                    sessionsTable.parentNode.insertBefore(endAllBtn, sessionsTable.nextSibling);
+                }
+            } else {
+                const endAllBtn = document.getElementById('end-all-sessions');
+                if (endAllBtn) {
+                    endAllBtn.remove();
+                }
+            }
+        }
+
+        // End all sessions
+        function endAllSessions() {
+            state.activeSessions.forEach(session => {
+                session.endedAt = new Date();
+                state.expiredSessions.push(session);
+
+                // Also remove from grid if it's there
+                const tile = document.querySelector(`.video-tile[data-camera-id="${session.cameraId}"]`);
+                if (tile) {
+                    resetTile(tile);
+                }
+            });
+
+            state.activeSessions = [];
+
+            // Save to localStorage
+            saveToLocalStorage();
+
+            // Refresh sessions table
+            refreshSessionsTable();
+        }
+
+        // Change grid layout
+        function changeGridLayout(layout) {
+            state.gridLayout = layout;
+
+            // Clear grid
+            cameraGrid.innerHTML = '';
+
+            // Create new grid based on layout
+            const [rows, cols] = layout.split('x').map(Number);
+            cameraGrid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            cameraGrid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+            // Add empty tiles
+            for (let i = 0; i < rows * cols; i++) {
+                const tile = document.createElement('div');
+                tile.className = 'video-tile empty';
+                tile.innerHTML = '<div class="video-placeholder">Drop camera here</div>';
+                cameraGrid.appendChild(tile);
+            }
+
+            // Re-initialize drag and drop
+            initDragAndDrop();
+
+            // Save to localStorage
+            saveToLocalStorage();
+        }
+
+        // Update connection status
+        function updateConnectionStatus() {
+            if (state.connectionStatus) {
+                connectionStatusIndicator.style.backgroundColor = 'var(--success-color)';
+                connectionStatusIndicator.classList.remove('offline');
+                connectionStatusIndicator.nextElementSibling.textContent = 'Server Connected';
+            } else {
+                connectionStatusIndicator.style.backgroundColor = 'var(--danger-color)';
+                connectionStatusIndicator.classList.add('offline');
+                connectionStatusIndicator.nextElementSibling.textContent = 'Server Disconnected';
+            }
+        }
+
+        // Update timers for sessions
+        function updateTimers() {
+            // Update session timers if on sessions tab
+            if (document.getElementById('my-sessions').classList.contains('active')) {
+                refreshSessionsTable();
+            }
+        }
+
+        // Save data to localStorage
+        function saveToLocalStorage() {
+            const data = {
+                assignedCameras: state.assignedCameras,
+                activeSessions: state.activeSessions,
+                expiredSessions: state.expiredSessions,
+                requests: state.requests,
+                gridLayout: state.gridLayout,
+                allowDuplicates: state.allowDuplicates
+            };
+
+            localStorage.setItem('polycabCameraRequester', JSON.stringify(data));
+        }
+
+        // Load data from localStorage
+        function loadFromLocalStorage() {
+            const data = JSON.parse(localStorage.getItem('polycabCameraRequester'));
+
+            if (data) {
+                if (data.assignedCameras) state.assignedCameras = data.assignedCameras;
+                if (data.activeSessions) state.activeSessions = data.activeSessions;
+                if (data.expiredSessions) state.expiredSessions = data.expiredSessions;
+                if (data.requests) state.requests = data.requests;
+                if (data.gridLayout) {
+                    state.gridLayout = data.gridLayout;
+                    changeGridLayout(data.gridLayout);
+
+                    // Update active button
+                    document.querySelectorAll('.grid-controls button').forEach(btn => {
+                        btn.classList.remove('active');
+                        if (btn.getAttribute('data-layout') === data.gridLayout) {
+                            btn.classList.add('active');
+                        }
+                    });
+                }
+                if (data.allowDuplicates !== undefined) state.allowDuplicates = data.allowDuplicates;
+
+                // Refresh UI if needed
+                if (document.getElementById('my-dashboard').classList.contains('active')) {
+                    refreshCameraLibrary();
+                }
+
+                if (document.getElementById('my-sessions').classList.contains('active')) {
+                    refreshSessionsTable();
+                }
+            }
+        }
+
+        // Initialize the app when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>
