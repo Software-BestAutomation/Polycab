@@ -1,0 +1,12 @@
+<section id="dashboard" class="view-container active">
+    <p style="grid-column: 1/-1; text-align: center; color: #8a8b95; padding-top: 1rem;">
+        Drag camera here
+    </p>
+</section>
+
+<script>
+    // When dashboard mounts, initialize drag/drop + render streams
+    if (window && typeof window.__attachDashboard === "function") {
+        window.__attachDashboard();
+    }
+</script>

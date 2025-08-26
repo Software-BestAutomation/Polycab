@@ -1,0 +1,40 @@
+<section class="view-container">
+    <div class="cameras">
+        <h2>Camera Request</h2>
+        <div class="two-col" style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+            <div class="card">
+                <h3>Available Cameras</h3>
+                <ul id="camera-list" style="margin-top:8px;"></ul>
+            </div>
+            <div class="card">
+                <h3>Selected (drag to Dashboard)</h3>
+                <div id="drop" class="dropzone" tabindex="0">Drop here</div>
+                <p class="note" style="margin-top:8px;">Tip: Drag items here, then open Dashboard to view tiles.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    (async function () {
+        const ul = document.getElementById('camera-list');
+        const drop = document.getElementById('drop');
+
+        const items = await fetch('/api/cameras').then(r => r.json());
+        ul.innerHTML = items.map(c => `<li draggable="true" data-id="${c.id}" style="padding:6px 8px; border:1px solid #ddd; border-radius:6px; margin:6px 0; background:#fff; color:#222; cursor:grab;">
+      ${c.name} (Lab ${c.lab_id})
+    </li>`).join('');
+
+        ul.querySelectorAll('li').forEach(li => {
+            li.addEventListener('dragstart', e => { e.dataTransfer.setData('id', li.dataset.id); });
+        });
+
+        drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
+        drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+        drop.addEventListener('drop', e => {
+            e.preventDefault(); drop.classList.remove('dragover');
+            const id = e.dataTransfer.getData('id');
+            if (!window.__state.streams.includes(id)) { window.__state.streams.push(id); }
+        });
+    })();
+</script>

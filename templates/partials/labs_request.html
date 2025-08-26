@@ -1,0 +1,49 @@
+<section class="view-container">
+    <div class="labs">
+        <h2>Labs Request</h2>
+
+        <form id="lab-form" class="card" style="max-width: 420px;">
+            <label style="display:block; margin-bottom:8px;">
+                Name
+                <input name="name" placeholder="e.g., Lab 3" required
+                    style="width:100%; padding:8px; border-radius:6px; border:1px solid #ddd; margin-top:4px;" />
+            </label>
+            <button type="submit" class="control-btn" style="background:#222533;">Create Lab</button>
+        </form>
+
+        <table class="table" id="labs-table" style="margin-top:16px;">
+            <thead>
+                <tr>
+                    <th>Lab</th>
+                    <th>Total Cameras</th>
+                    <th>Online</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</section>
+
+<script>
+    (async function () {
+        const tbody = document.querySelector('#labs-table tbody');
+        const rows = await fetch('/api/labs').then(r => r.json());
+        tbody.innerHTML = rows.map(r => `<tr><td>${r.name}</td><td>${r.total_cameras}</td><td>${r.online}</td></tr>`).join('');
+
+        document.getElementById('lab-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const payload = { name: fd.get('name') };
+            const res = await fetch('/api/labs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                alert('Lab created');
+                // Reload the view to refresh list
+                window.router.navigate('/labs');
+            }
+        });
+    })();
+</script>
